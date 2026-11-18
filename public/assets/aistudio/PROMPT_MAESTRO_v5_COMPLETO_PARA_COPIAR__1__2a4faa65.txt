@@ -1,0 +1,621 @@
+PROMPT MAESTRO v5: Sitio web de pastelería (ventas, encargos y pedidos)
+Versión 5. Adaptación de la v3 (tecnología) al rubro de pastelería: catálogo, configurador de pasteles a medida, calendario de entregas, pedido por WhatsApp y servicios para eventos. Respecto de la v4: incorpora la dirección de arte basada en las skills frontend-design y taste-skill (sección 6.0, con ajustes puntuales en las secciones 1 a 14 para eliminar lo que chocaba con ella) y completa las secciones 15 a 18 (accesibilidad, SEO, rendimiento, autoauditoría y pruebas). Un solo index.html, sin librerías, listo para producción.
+0. REGLAS DE LECTURA
+Este documento es la especificación completa. Cumple cada punto; si algo no está definido, decide con criterio profesional y mantén coherencia con el resto.
+Orden de prioridad ante conflictos: seguridad alimentaria (alérgenos, conservación, fechas reales) > accesibilidad > claridad > rendimiento > animación > decoración.
+Jerarquía de las reglas de diseño: primero la palabra del cliente (su brief, logotipo, colores y fotos); después la sección 6.0 (dirección de arte); después los valores de ejemplo de 6.1 a 6.5 y de la sección 14. Los colores, tipografías y efectos de ejemplo de esas secciones son propuestas de partida: se conservan solo si superan la revisión de 6.0.2, y si se sustituyen, se mantienen los nombres de variables y tokens para no romper el resto del código.
+Todo dato real que falte (nombre, teléfono, ciudad, horarios, zonas, políticas, permisos sanitarios, testimonios, fotos, precios definitivos) se escribe como [MARCADOR_EN_MAYÚSCULAS]. Nunca inventes cifras, reseñas, premios, certificaciones, permisos sanitarios ni afirmaciones como «100% natural», «sin conservantes» u «orgánico».
+Los productos, tamaños, precios, alérgenos, plazos y cupos de la sección 5 son datos de EJEMPLO. Deben poder reemplazarse editando el objeto CONFIG y los arreglos de DATA, sin tocar el resto del código.
+Alérgenos y dietas son información de seguridad. Los datos de ejemplo son ilustrativos y la pastelería debe verificarlos antes de publicar. Existe la constante ALERGENOS_VERIFICADOS (false por defecto); con ?debug=1 y valor false se muestra una franja de revisión. Nunca presentes «sin gluten», «vegano» o «sin azúcar» como garantía médica: acompáñalos siempre del aviso [AVISO_ALÉRGENOS] sobre contaminación cruzada.
+Idioma: español neutro latinoamericano. Moneda por defecto USD ($), configurable. Vocabulario configurable en CONFIG.VOCABULARIO (pastel/pasteles; alternativas: torta, tarta, queque): ningún texto escribe la palabra a mano, todos la toman de esa constante.
+Fechas y horas se calculan en CONFIG.ZONA_HORARIA (por defecto America/Guayaquil), nunca con la hora del dispositivo.
+Es un sitio estático. Lo que normalmente exigiría servidor (cupos reales, estado de pedidos, pagos en línea) se resuelve con datos editables y con WhatsApp como canal de confirmación. Cada una de esas limitaciones se documenta con un comentario que empiece por «LIMITACIÓN:».
+1. ROL, OBJETIVO Y REFERENTES
+Rol: design engineer senior (diseño UI + front-end + motion) especializado en e-commerce de alimentos por encargo. Entregas código de producción con criterio propio, no plantillas.
+Objetivo: sitio de [NOMBRE_EMPRESA], pastelería en [CIUDAD/PAÍS], que permita tres cosas, en este orden de importancia: (1) encargar un pastel personalizado para una fecha concreta, (2) comprar pasteles y postres del catálogo con retiro o entrega, (3) cotizar bodas, mesas de postres y pedidos para empresas. Debe dar apetito, transmitir cuidado y confianza (fechas claras, precios claros, alérgenos claros) y dejar una impresión memorable en la primera visita.
+Medida de éxito: desde un móvil, una persona puede dejar un pedido completo por WhatsApp en menos de 3 minutos y sin dudas sobre fecha, precio y alérgenos.
+Referentes (cualidades, no copias):
+Pastelería de autor: la identidad nace del oficio y los materiales de [NOMBRE_EMPRESA] (mantequilla, azúcar, fondant, papel encerado, cajas, cintas, moldes), no de una receta genérica de «pastelería bonita». Titulares con carácter, ilustración o fotografía como protagonista, voz cercana y concreta.
+E-commerce de comida por encargo: plazos y calendario visibles desde el primer clic, precio «desde» honesto, resumen del pedido siempre a la vista.
+Filosofía de animación de Emil Kowalski: cada animación tiene un propósito; lo frecuente es rápido y sobrio; lo raro puede lucirse; nada de ease-in en entradas; nada de transition: all; entradas desde scale(.95), nunca desde scale(0).
+Rigor anti «AI slop» de Impeccable: color en OKLCH, neutros con tinte (cálido en este caso), nada de gradientes morados, bordes laterales de color, rebotes ni glows; texto con longitud de línea cómoda; objetivos táctiles amplios; encabezados sin saltos.
+Skill frontend-design (Anthropic): se trabaja como el estudio de diseño que da a cada cliente una identidad propia. Decisiones opinadas de paleta, tipografía y composición que salen del tema; plan de tokens revisado contra los defaults antes de escribir código; una sola cosa memorable y todo lo demás en silencio; la escritura de la interfaz es parte del diseño.
+Skill taste-skill (variante design-taste-frontend): tres diales (varianza, movimiento, densidad) que se declaran y se obedecen; correcciones explícitas a los sesgos de los modelos (héroe centrado, morado y neón, emojis, tarjetas en todas partes, tipografías de siempre, nombres y cifras de relleno); lista de verificación antes de entregar.
+2. PROCESO OBLIGATORIO
+Paso 1. Plan de diseño (obligatorio, antes de escribir código): aplica 6.0.2 en dos pasadas (plan de tokens y revisión contra los defaults de 6.0.3). Deja el resultado al inicio del archivo, en un comentario HTML de 14 líneas máx., que declare: sujeto y público objetivo, tono de marca, los valores de los tres diales (6.0.4), 3 decisiones visuales comprometidas, la única cosa memorable (el pastel que se arma en el hero, momento firma 1), momento firma 2 (la vista previa del pastel que cambia con cada elección del configurador, funcional y sobria), tipografía y por qué se eligió, paleta (4 a 6 valores con nombre), principio de movimiento, qué defaults de 6.0.3 aparecieron en el primer plan y qué se cambió, y las 3 reglas de negocio críticas (plazos, cupos, anticipo).
+Paso 2. Construye el sitio completo según esta especificación.
+Paso 3. Autoauditoría (sección 18, incluida su revisión de diseño) y pruebas de lógica (18.2): corrige todo lo que falle antes de entregar. No narres la auditoría; entrega solo el resultado corregido y la lista de pendientes de 18.3.
+3. ARQUITECTURA DEL ARCHIVO
+Un solo index.html. HTML + CSS + JavaScript vanilla (ES2020+), sin frameworks ni librerías. Único recurso externo: Google Fonts, en una sola petición con preconnect y display=swap, con una o dos familias elegidas en la revisión de 6.0.6 y como máximo 4 pesos o ejes por familia. Cambiar de familia exige editar solo --font-display y --font-ui. Las fotos reales, si existen, son archivos locales relativos (./img/); mientras no existan se usan las ilustraciones SVG.
+CSS con @layer en este orden: reset, tokens, base, layout, components, views, motion, utilities, print. Un comentario de cabecera por capa.
+JS en secciones comentadas: CONFIG, DATA (categorías, productos, opciones del configurador, servicios, zonas, galería, testimonios, hitos, equipo, FAQ, temporadas), UTILS (dinero en centavos enteros, fechas con Intl y zona horaria, normalizar texto sin tildes, escapeHTML, clamp, lerp, codificar y decodificar diseño), STORE (pedido, favoritos, borrador del configurador y preferencias en localStorage dentro de try/catch, con clave versionada pasteleria:v1 y migración segura), PRICING, SCHEDULE (plazos, cupos, calendario, franjas, abierto/cerrado), ROUTER, RENDER (funciones que devuelven HTML por vista y componente), BUILDER (configurador), CHECKOUT, UI (modal, drawer, toast, focus trap, bottom sheet), MOTION (reveal, contadores, FLIP, spring, slider, vuelo al pedido), TRACK (stub de analítica), BOOT.
+Íconos e ilustraciones como <symbol> en un sprite SVG oculto al inicio del <body>, reutilizados con <use>.
+Delegación de eventos: listeners únicos de click, keydown, input, change y pointerdown en document; nada de onclick inline.
+Todo texto de datos o escrito por el usuario se inserta con escapeHTML. Todo mensaje de WhatsApp se construye con encodeURIComponent. El dinero se maneja en centavos enteros y solo se formatea al mostrarlo (Intl.NumberFormat con CONFIG.LOCALE y CONFIG.MONEDA).
+Con ?debug=1 se ejecuta __autotest() (sección 18.2) y se imprime el resultado en consola. Sin ese parámetro no corre ni se muestra nada.
+Si el límite de salida impide entregar el archivo completo, divídelo en PARTE 1 (HTML + CSS), PARTE 2 (JS: CONFIG hasta SCHEDULE) y PARTE 3 (JS: ROUTER hasta BOOT), con los marcadores finales exactos «[CONTINÚA EN PARTE 2]», «[CONTINÚA EN PARTE 3]» y «[FIN]». Prohibido resumir, abreviar con «...» u omitir código, y prohibido quitar funciones para que quepa.
+Si la entrega tuviera que hacerse por etapas, el orden de prioridad es: 1) router, catálogo, modal de producto, pedido y checkout por WhatsApp; 2) configurador y calendario; 3) servicios y vistas informativas; 4) animaciones de nivel C. Cada etapa debe funcionar por sí sola.
+4. ENRUTADOR Y MAPA DE ENLACES (TARJETAS ENLAZADAS)
+Navegación por hash, sin recargar. Rutas:
+#/inicio (por defecto)
+#/pasteles con parámetros opcionales: ?cat=celebracion|personalizados|bodas|individuales|postres|complementos  &dieta=sin-gluten|vegano|sin-azucar|sin-lactosa  &ocasion=ID  &q=TEXTO  &orden=relevancia|precio-asc|precio-desc|novedad  &hoy=1 (pronta entrega hoy)  &fav=1  &disp=1
+#/pastel/<id> (modal de detalle sobre #/pasteles)
+#/arma-tu-pastel con parámetros opcionales: ?paso=1..6  &d=<diseño codificado>  &base=<id de producto>  &ref=<id de diseño de galería>  &editar=<id de línea del pedido>
+#/servicios (vista Eventos y servicios) y #/servicio/<id> (modal de detalle)
+#/nosotros
+#/diseno/<id> (visor de galería; si se llega por enlace directo, se abre sobre #/inicio)
+#/cotizar?servicio=<id>&producto=<id>&fecha=AAAA-MM-DD&personas=N (modal de formulario con valores preseleccionados)
+#/carrito (drawer «Mi pedido»)
+#/pedido (modal de checkout: datos, entrega, fecha, pago, resumen)
+#/seguimiento (modal para consultar el estado de un pedido)
+#/faq, #/cuidados, #/alergenos, #/politicas, #/privacidad (modales con contenido y [TEXTO_LEGAL])
+Pestaña activa del header: Inicio para #/inicio; Pasteles para #/pasteles y #/pastel/; Arma tu pastel para #/arma-tu-pastel; Eventos y servicios para #/servicios, #/servicio/ y #/cotizar; Nosotros para #/nosotros. Los modales informativos no cambian la pestaña activa.
+Comportamiento del router:
+Al cambiar de vista: actualiza document.title y la meta description, lleva el scroll al inicio, mueve el foco al <h1> de la vista (tabindex=-1) y anuncia el cambio en una región aria-live=polite.
+Los filtros del catálogo viven en el hash (compartibles; funcionan con atrás/adelante). Los cambios de filtro y de paso del configurador usan replaceState; abrir un producto, servicio, diseño o modal usa pushState, así «Atrás» cierra el modal.
+El diseño del configurador vive en el parámetro d (ids separados por ~) y en localStorage, de modo que se puede compartir por enlace («Copiar enlace de mi diseño») y sobrevive a una recarga. Si d es inválido o tiene ids desconocidos, se ignora esa parte y se usan valores por defecto, sin errores.
+Un hash inválido redirige a #/inicio. Un id desconocido muestra el estado vacío de la vista, nunca una pantalla en blanco.
+Cerrar un modal: si se abrió desde dentro del sitio, history.back(); si se llegó por enlace directo, ir a la vista base de ese modal (#/pasteles, #/servicios o #/inicio).
+REGLA DE TARJETAS: toda tarjeta es un enlace real (<a href=#/...>) con patrón «stretched link»: el <a> está en el título de la tarjeta y su ::after cubre toda la tarjeta (position:absolute; inset:0). Los botones internos (favorito, agregar, solicitar) llevan position:relative; z-index:2 y funcionan de forma independiente. Ctrl/Cmd+clic, foco por teclado, Enter y lectores de pantalla funcionan. Estados :hover y :focus-within idénticos.
+Mapa de destinos por tarjeta:
+INICIO
+Hero: «Armar mi pastel» → #/arma-tu-pastel. «Ver pasteles» → #/pasteles. Chip «Próxima fecha disponible: [fecha calculada]» → #/arma-tu-pastel?paso=6. Cuatro tarjetas flotantes: Cumpleaños → #/pasteles?ocasion=cumpleanos; Bodas → #/servicio/bodas; Cupcakes → #/pasteles?cat=individuales; Sin gluten → #/pasteles?dieta=sin-gluten.
+Barra de confianza (4): Plazos claros → #/faq. Entregas en [ZONAS] → #/servicio/entregas. Alérgenos y dietas → #/alergenos. Anticipo para reservar → #/politicas.
+Categorías (6): cada una → #/pasteles?cat=<categoría>.
+Cómo pedir (4 pasos): 1 Elige → #/pasteles. 2 Personaliza → #/arma-tu-pastel. 3 Reserva tu fecha → #/politicas. 4 Recibe o retira → #/servicio/entregas.
+Destacados (4 productos: cel-01, cel-04, ind-01, per-01) → #/pastel/<id>. Enlace «Ver todos los pasteles» → #/pasteles.
+Por dentro (slider exterior/interior): enlace «Elegir mis sabores» → #/arma-tu-pastel?paso=3. Los 4 puntos interactivos no navegan, abren una descripción.
+Galería de diseños (6 visibles, chips por ocasión): cada tarjeta → #/diseno/<id>. Botón «Ver más diseños» muestra el resto.
+Temporada (solo si hay una activa, ver 5.9): tarjeta destacada → #/pasteles?cat=<categoría definida en la temporada>.
+Eventos (3 tarjetas de servicio: bodas, mesa-dulce, corporativo) → #/servicio/<id>.
+Testimonios (3): cada tarjeta enlaza al producto o servicio que menciona.
+Preguntas frecuentes (4 en acordeón) y enlace «Ver todas las preguntas» → #/faq.
+CTA final → #/arma-tu-pastel; secundario → WhatsApp [NÚMERO] con texto precargado.
+ARMA TU PASTEL
+Cada paso es un estado de la misma vista (?paso=N). Enlaces auxiliares: «Ver pasteles listos» → #/pasteles; «¿Dudas con alérgenos?» → #/alergenos; «Preguntas frecuentes» → #/faq; «Cotizar un evento» → #/cotizar.
+Último paso: «Agregar al pedido» agrega y abre #/carrito. «Consultar por WhatsApp» abre WhatsApp con el diseño resumido. Si la decoración es escultórica, el botón principal es «Pedir cotización» → #/cotizar?servicio=personalizados&fecha=<fecha elegida>.
+PASTELES
+Tarjeta de producto → #/pastel/<id>. Chips de categoría, ocasión y dieta → modifican el hash.
+Bloque inferior «Para eventos»: tarjetas de servicio → #/servicio/<id>.
+Modal de producto: breadcrumb (Pasteles › Categoría › Nombre) con enlaces a #/pasteles y #/pasteles?cat=<cat>. Bloque «Combínalo con» (hasta 3 tarjetas) → #/pastel/<id>. Bloque «Servicios recomendados» (2 tarjetas) → #/servicio/<id>. En pasteles: bloque «Agrega un detalle» (complementos como velas y topper, con botón de agregar). En complementos: bloque «Ideal para» (2 o 3 pasteles) → #/pastel/<id>. Botón «Personalizar este pastel» (si es personalizable) → #/arma-tu-pastel?base=<id>.
+EVENTOS Y SERVICIOS
+Tarjeta de servicio → #/servicio/<id>; su botón «Cotizar» → #/cotizar?servicio=<id>.
+Modal de servicio: lista «Incluye», precio de partida, «Cómo funciona» (3 pasos), «Productos relacionados» (3 tarjetas) → #/pastel/<id>, botón «Cotizar este servicio» → #/cotizar?servicio=<id>.
+NOSOTROS
+Valores (3): Ingredientes y proceso → #/cuidados; Transparencia en alérgenos → #/alergenos; Plazos y reservas claros → #/politicas.
+Equipo (3 tarjetas) → WhatsApp con texto «Hola [NOMBRE_PERSONA], quiero información».
+CTA final → #/arma-tu-pastel y #/pasteles.
+MODALES Y PEDIDO
+Visor de diseño: botón «Pedir uno parecido» → #/arma-tu-pastel?ref=<id>. Flechas anterior/siguiente cambian de diseño con replaceState.
+Drawer Mi pedido: el nombre de cada línea → #/pastel/<id> (en líneas del configurador, «Editar diseño» → #/arma-tu-pastel?editar=<id de línea>). «Continuar con el pedido» → #/pedido. «Seguir viendo» cierra el drawer.
+Checkout: enlaces a #/politicas, #/alergenos y #/privacidad. Pantalla de éxito: «Consultar estado» → #/seguimiento.
+FOOTER
+Columnas: Pasteles (6 enlaces a las categorías), Pedidos (Arma tu pastel, Eventos y servicios, Seguimiento, Preguntas frecuentes, Cuidados), Empresa (Inicio, Nosotros, Alérgenos, Políticas, Privacidad), Contacto (WhatsApp, correo, dirección, horario, redes [REDES_SOCIALES]). Debajo: aviso [AVISO_ALÉRGENOS], [REGISTRO_SANITARIO] y estado abierto/cerrado.
+5. DATOS (CONFIG Y ARREGLOS JS, EDITABLES)
+5.1 CONFIG (objeto único, todo editable)
+Identidad: NOMBRE_EMPRESA [NOMBRE_EMPRESA] | CIUDAD [CIUDAD] | WHATSAPP [NÚMERO] (solo dígitos, con código de país) | EMAIL [EMAIL] | DIRECCION [DIRECCIÓN] | MAPA_URL [ENLACE_MAPS] | REDES [REDES_SOCIALES].
+Regional: MONEDA USD | LOCALE es-EC | ZONA_HORARIA America/Guayaquil | VOCABULARIO { pastel, pasteles } | IVA_INCLUIDO true (los precios dicen «IVA incluido» o «más IVA» según este valor).
+Horario: HORARIO_SEMANAL (ejemplo: lunes a sábado 09:00 a 18:00, domingo cerrado, [HORARIO]) | HORA_CORTE_PEDIDOS 16:00 (un pedido hecho después de esa hora cuenta como hecho al día siguiente) | HORA_CORTE_HOY 12:00 (límite para pronta entrega el mismo día).
+Capacidad: CUPOS_POR_DIA 6 | RESERVADOS (mapa AAAA-MM-DD → cupos usados, se edita a mano) | FECHAS_BLOQUEADAS (arreglo de AAAA-MM-DD: feriados, vacaciones) | DIAS_ADELANTE_MAX 120. LIMITACIÓN: sin servidor, los cupos no se descuentan solos.
+Pago: ANTICIPO_PORCENTAJE 50 ([ANTICIPO_PORCENTAJE]) | METODOS_PAGO [MÉTODOS_DE_PAGO] | DATOS_PAGO [DATOS_PARA_TRANSFERENCIA] (nunca se muestran antes de enviar el pedido; los entrega el asesor por WhatsApp).
+Opciones: RECARGO_URGENTE_PORCENTAJE 0 (0 = no se ofrece entrega urgente) | FRANJAS ['09:00 a 11:00', '11:00 a 13:00', '13:00 a 15:00', '15:00 a 17:00'] | PRONTA_ENTREGA_ACTIVA true (el stock del día se edita a mano en cada producto) | MOSTRAR_VALORACIONES true (poner false mientras no existan reseñas reales; con false tampoco se emite aggregateRating en el JSON-LD) | CUPONES [] (vacío; esquema: codigo, tipo porcentaje|monto, valor, vigencia AAAA-MM-DD, minimo) | ALERGENOS_VERIFICADOS false.
+Integraciones opcionales: ENDPOINT_PEDIDOS null | ENDPOINT_ESTADO null | ANALITICA null. Si se completan, el sitio usa fetch y mantiene WhatsApp como respaldo si la petición falla.
+5.2 Categorías (clave: nombre | subtexto)
+celebracion: Pasteles de celebración | Cumpleaños y reuniones
+personalizados: Pasteles personalizados | Diseñados contigo
+bodas: Bodas y eventos grandes | Pisos y mesas de postres
+individuales: Cupcakes, minis y porciones | Para regalar o compartir
+postres: Postres, galletas y brownies | Para acompañar
+complementos: Velas, toppers y cajas | Los detalles finales
+El contador «N productos» se calcula desde los datos.
+5.3 Campos y reglas de producto
+Campos: id, cat, nombre, descripcion (2 líneas), tamanos[] (id, etiqueta, porciones, precio en dólares con decimales, defecto), antes (opcional, precio anterior de una promoción), badge (Nuevo | Temporada | Más pedido | Por encargo | Agotado | null), rating, resenas, pronta (unidades listas hoy; 0 = solo por encargo), anticipacionDias, cupos (peso en el cupo diario, 1 por defecto), personalizable, disponible (false = descontinuado), dietas[] (opciones disponibles bajo pedido, con recargo), alergenos[] (gluten | huevo | lacteos | frutos-secos | soya), ocasiones[], ilustracion (clave de symbol SVG), relacionados[], servicios[], complementos[] (en pasteles) o idealPara[] (en complementos), incluye[3], conservacion [CONSERVACIÓN], foto (opcional, ruta local).
+Reglas:
+«Agotado» solo cuando disponible es false (descontinuado o fuera de temporada): el botón se reemplaza por «Avisarme por WhatsApp». El stock diario nunca se llama agotado: si pronta es 0 se muestra «Por encargo, desde [fecha mínima calculada]».
+«Hoy: quedan N» solo si PRONTA_ENTREGA_ACTIVA y pronta > 0, en color --warning cuando N ≤ 3. Es un dato real editable, jamás aleatorio ni inventado. No se anima.
+El filtro hoy=1 incluye productos con pronta > 0 solo si la tienda está abierta y es anterior a HORA_CORTE_HOY.
+Precio en tarjetas: «Desde $X» (tamaño más pequeño). Si hay antes, se muestra tachado con un chip «-N%» (calculado y redondeado).
+Valoraciones solo si MOSTRAR_VALORACIONES y resenas > 0.
+Nuevo, Temporada, Más pedido y Por encargo son insignias informativas, no filtros.
+Las alergenos y dietas se muestran como texto con ícono, nunca solo con color.
+5.4 Productos de ejemplo (20)
+Formato: id | nombre | descripción 1 | descripción 2 | tamaños (etiqueta porciones: precio) | badge | rating (reseñas) | pronta | plazo | cupos | al (alérgenos) | di (dietas disponibles) | oc (ocasiones) | rel | srv | compl o idealPara
+CELEBRACIÓN
+cel-01 | Pastel de Vainilla y Frutos Rojos | Bizcocho de vainilla · relleno de crema y mermelada de frutos rojos | Cobertura de crema de mantequilla · frutas de decoración | Pequeño 6 a 8: 24 · Mediano 12 a 16: 42 · Grande 20 a 24: 62 | Más pedido | 4.8 (64) | pronta 2 | 2 días | cupos 1 | al: gluten, huevo, lácteos | di: sin-gluten, sin-lactosa | oc: cumpleanos, aniversario | rel: cel-02, ind-01, per-01 | srv: personalizados, entregas | compl: com-01, com-02
+cel-02 | Pastel de Chocolate Intenso | Bizcocho húmedo de chocolate · ganache de chocolate semiamargo | Cobertura lisa de ganache | Pequeño 6 a 8: 26 · Mediano 12 a 16: 45 · Grande 20 a 24: 66 | sin insignia | 4.7 (88) | pronta 1 | 2 días | cupos 1 | al: gluten, huevo, lácteos | di: sin-gluten, vegano | oc: cumpleanos, aniversario, graduacion | rel: cel-04, per-01, com-01 | srv: personalizados, entregas | compl: com-01, com-02
+cel-03 | Tres Leches Clásico | Bizcocho esponjoso bañado en tres leches | Cobertura de crema chantilly y canela | Mediano 12 a 16: 36 · Grande 20 a 24: 52 · Bandeja 30 a 35: 74 | sin insignia | 4.7 (102) | pronta 0 | 1 día | cupos 1 | al: gluten, huevo, lácteos | di: sin-gluten | oc: cumpleanos, bautizo, corporativo | rel: cel-01, ind-03, com-01 | srv: entregas, corporativo | compl: com-01
+cel-04 | Red Velvet con Queso Crema | Bizcocho rojo aterciopelado · relleno de queso crema | Cobertura de queso crema | Pequeño 6 a 8: 28 · Mediano 12 a 16: 48 · Grande 20 a 24: 70 | Nuevo | 4.8 (23) | pronta 0 | 3 días | cupos 1 | al: gluten, huevo, lácteos | di: sin-gluten | oc: cumpleanos, aniversario, baby-shower | rel: cel-02, per-01, com-02 | srv: personalizados, entregas | compl: com-01, com-02
+cel-05 | Pastel de Zanahoria y Nuez | Bizcocho especiado de zanahoria con nuez | Relleno y cobertura de queso crema | Pequeño 6 a 8: 26 · Mediano 12 a 16: 44 · Grande 20 a 24: 64 | Temporada | 4.6 (31) | pronta 0 | 3 días | cupos 1 | al: gluten, huevo, lácteos, frutos-secos | di: ninguna | oc: cumpleanos, bautizo | rel: cel-04, cel-01, ind-02 | srv: entregas | compl: com-01
+PERSONALIZADOS (personalizable = true en los tres)
+per-01 | Pastel Personalizado de 1 Piso | Elige sabor, relleno, cobertura y decoración | Diseño según tu referencia | 15 cm 6 a 8: 32 · 20 cm 12 a 16: 52 · 25 cm 20 a 24: 74 | Por encargo | 4.9 (41) | pronta 0 | 3 días | cupos 1 | al: gluten, huevo, lácteos (según elección) | di: sin-gluten, vegano, sin-azucar, sin-lactosa | oc: todas | rel: per-02, cel-02, com-02 | srv: personalizados, degustacion | compl: com-01, com-02
+per-02 | Pastel Personalizado de 2 Pisos | Dos pisos con sabores combinables | Para 25 a 45 porciones | 20+15 cm 25 a 30: 95 · 25+15 cm 35 a 45: 125 | Por encargo | 4.8 (22) | pronta 0 | 5 días | cupos 2 | al y di: igual que per-01 | oc: cumpleanos, aniversario, bautizo, graduacion, baby-shower | rel: per-01, per-03, bod-01 | srv: personalizados, degustacion | compl: com-01, com-02
+per-03 | Pastel con Figura en Fondant | Figura o escena modelada a mano | Precio final según complejidad | 20 cm 12 a 16: 90 · 25 cm 20 a 24: 120 | Por encargo | 4.9 (17) | pronta 0 | 7 días | cupos 2 | al: gluten, huevo, lácteos | di: sin-lactosa | oc: cumpleanos, baby-shower, bautizo | rel: per-01, per-02, com-02 | srv: personalizados | compl: com-02
+BODAS Y EVENTOS
+bod-01 | Pastel de Boda de 3 Pisos | Tres pisos para 60 a 80 porciones | Decoración floral comestible | 3 pisos 60 a 80: 280 · 4 pisos 100 a 120: 390 | Por encargo | 4.9 (9) | pronta 0 | 14 días | cupos 4 | al: gluten, huevo, lácteos | di: sin-gluten, sin-lactosa | oc: boda, aniversario | rel: per-02, bod-02, ind-02 | srv: bodas, degustacion | compl: com-02 | personalizable
+bod-02 | Mesa de Postres para 50 Personas | Selección de 4 postres · 2 piezas por persona | Exhibidores y montaje [CONFIRMAR_INCLUSIONES] | 50 personas: 350 · 100 personas: 640 | Por encargo | 4.8 (8) | pronta 0 | 10 días | cupos 4 | al: gluten, huevo, lácteos, frutos-secos | di: sin-gluten | oc: boda, corporativo, baby-shower, graduacion | rel: bod-01, ind-01, pos-03 | srv: mesa-dulce, corporativo | sin complementos
+INDIVIDUALES
+ind-01 | Cupcakes Surtidos | 3 sabores a elección · cobertura de crema de mantequilla | Caja para transporte incluida | x6: 14 · x12: 26 · x24: 48 | Más pedido | 4.7 (131) | pronta 12 | 1 día | cupos 1 | al: gluten, huevo, lácteos | di: sin-gluten | oc: cumpleanos, corporativo, baby-shower | rel: ind-02, cel-01, pos-01 | srv: corporativo, entregas | compl: com-01
+ind-02 | Mini Pasteles Individuales | Porciones de 8 cm · relleno a elección | Ideal para obsequios y mesas dulces | x4: 18 · x8: 34 · x12: 48 | Nuevo | 4.6 (35) | pronta 0 | 2 días | cupos 1 | al: gluten, huevo, lácteos | di: sin-lactosa | oc: baby-shower, bautizo, corporativo | rel: ind-01, ind-04, cel-05 | srv: mesa-dulce, degustacion
+ind-03 | Cheesecake de Frutos Rojos (porción) | Base de galleta · crema de queso | Salsa de frutos rojos | x1: 5.50 · x4: 20 · x8: 38 | sin insignia | 4.8 (97) | pronta 8 | 1 día | cupos 1 | al: gluten, huevo, lácteos | di: sin-gluten | oc: cumpleanos, aniversario | rel: cel-03, ind-02, pos-01 | srv: degustacion, entregas
+ind-04 | Cake Pops | Bizcocho y crema con baño de chocolate | Palito y envoltorio individual | x12: 24 · x24: 44 | sin insignia | 4.5 (28) | pronta 0 | 2 días | cupos 1 | al: gluten, huevo, lácteos, soya | di: ninguna | oc: cumpleanos, baby-shower | rel: ind-02, pos-03, com-01 | srv: mesa-dulce
+POSTRES
+pos-01 | Brownies de Chocolate | Bandeja de cacao intenso · centro húmedo | Opción con nueces [CONFIRMAR_OPCIÓN] | x9: 16 · x16: 27 | Más pedido | 4.7 (76) | pronta 6 | 1 día | cupos 1 | al: gluten, huevo, lácteos | di: sin-gluten | oc: cumpleanos, corporativo | rel: pos-02, ind-03, ind-01 | srv: corporativo, entregas
+pos-02 | Galletas Decoradas | Galletas de mantequilla con glaseado | Diseño según tu tema | x12: 30 · x24: 56 | Por encargo | 4.8 (44) | pronta 0 | 3 días | cupos 1 | al: gluten, huevo, lácteos | di: ninguna | oc: cumpleanos, baby-shower, bautizo, corporativo | rel: pos-01, pos-03, ind-04 | srv: mesa-dulce, corporativo
+pos-03 | Macarons Surtidos | 4 sabores a elección | Caja de regalo | x12: 22 · x24: 40 | sin insignia | 4.5 (28) | pronta 0 | 2 días | cupos 1 | al: huevo, lácteos, frutos-secos | di: sin-gluten | oc: boda, corporativo, aniversario | rel: pos-02, bod-02, ind-04 | srv: mesa-dulce, degustacion
+pos-04 | Postres en Vaso | Mousse y capas de bizcocho | 3 sabores a elección | x6: 18 · x12: 34 | Agotado (disponible = false) | 4.4 (19) | pronta 0 | 1 día | cupos 1 | al: gluten, huevo, lácteos | di: sin-azucar | oc: cumpleanos, corporativo | rel: pos-01, ind-03, pos-03 | srv: mesa-dulce
+COMPLEMENTOS (cupos 0, sin alérgenos)
+com-01 | Velas de Cumpleaños | Pack de 12 | Colores surtidos | Pack x12: 2.50 | sin insignia | 4.5 (60) | pronta 40 | 0 días | oc: cumpleanos | idealPara: cel-01, cel-02, cel-04, per-01 | rel: com-02, cel-01, ind-01
+com-02 | Topper Personalizado | Mensaje de hasta 25 caracteres | Material [CONFIRMAR_MATERIAL] | 1 unidad: 8 | sin insignia | 4.6 (33) | pronta 0 | 2 días | oc: cumpleanos, baby-shower | idealPara: cel-01, cel-04, per-01 | rel: com-01, per-01, cel-04
+Todos los ids de rel, srv, compl e idealPara deben existir en los datos. Cada producto lleva incluye[3] y conservacion con marcador cuando dependa del negocio.
+5.5 Opciones del configurador (EJEMPLO, precios en dólares)
+TAMAÑOS (id | etiqueta | porciones | pisos | base): p15 | 15 cm | 6 a 8 | 1 | 28; p20 | 20 cm | 12 a 16 | 1 | 46; p25 | 25 cm | 20 a 24 | 1 | 66; b30 | Bandeja 30 × 40 cm | 30 a 35 | 1 | 78; d20 | 2 pisos 20 + 15 cm | 25 a 30 | 2 | 88; d25 | 2 pisos 25 + 15 cm | 35 a 45 | 2 | 118; t25 | 3 pisos 25 + 20 + 15 cm | 60 a 80 | 3 | 260.
+SABORES DE BIZCOCHO (recargo por cada piso que lo usa): vainilla 0 | chocolate 0 | limón 2 | café 2 | red velvet 3 | zanahoria y nuez 3 | tres leches 4.
+RELLENOS (por piso): crema de vainilla 0 | ganache de chocolate 0 | dulce de leche 0 | mermelada de frutos rojos 0 | crema de maracuyá 2 | queso crema 2 | mousse de chocolate 3 | fruta fresca 4.
+COBERTURAS (una para todo el pastel, recargo por piso): crema de mantequilla 0 | chantilly 0 | semidesnudo 0 | merengue suizo 2 | ganache 4 | fondant 8.
+NIVEL DE DECORACIÓN (precio fijo): sencilla 0 (color y mensaje) | intermedia 15 (flores de crema, drip o frutas) | elaborada 35 (detalles modelados, pintura y dorado) | escultórica A COTIZAR (figuras 3D: el configurador no calcula precio y ofrece cotización).
+EXTRAS (multi-selección): topper personalizado 8 | impresión comestible 12 | flores comestibles 10 | frutas frescas 6 | drip de chocolate 8 | macarons decorativos x6 9 | confeti comestible 3 | dorado comestible 9 | figura de fondant pequeña 12 | velas pack x12 2.50 | caja premium 5.
+COLORES (hasta 2, o «Según mi referencia»; el nombre siempre visible, nunca solo el color): Blanco crema #FFF4E0, Rosa palo #F2C4CB, Frambuesa #C94768, Chocolate #5B3A29, Menta #BFE0CE, Azul cielo #BFD7EA, Mantequilla #F6DD8F, Terracota #C9774F.
+DIETAS (recargo porcentual sobre base + sabores + rellenos + coberturas): sin gluten 15% | vegano 15% | sin azúcar añadida 10% | sin lactosa 8%. Se suman entre sí. Siempre acompañadas de [AVISO_ALÉRGENOS].
+OCASIONES (id | nombre): cumpleanos Cumpleaños | boda Boda | baby-shower Baby shower | bautizo Bautizo o comunión | aniversario Aniversario | graduacion Graduación | corporativo Corporativo | otro Otra ocasión. Cada una sugiere un tamaño y un nivel de decoración por defecto, que la persona puede cambiar.
+PLAZOS del diseño (días): max(plazo por decoración, plazo por pisos) + 1 si hay dieta sin gluten o vegana. Por decoración: sencilla 3, intermedia 4, elaborada 6, escultórica 10. Por pisos: 1 piso 3, 2 pisos 5, 3 pisos 14.
+CUPOS del diseño (peso en el cupo diario): 1 piso con decoración sencilla o intermedia = 1; 2 pisos o decoración elaborada = 2; 3 pisos o escultórica = 4.
+FÓRMULA de precio: base del tamaño + suma de recargos de sabor y relleno por piso + recargo de cobertura × pisos + decoración + suma de extras; sobre (base + sabores + rellenos + coberturas) se suma el porcentaje de cada dieta; si la fecha elegida es anterior al plazo normal y RECARGO_URGENTE_PORCENTAJE > 0, se suma ese porcentaje al total. Todo en centavos enteros.
+5.6 Servicios (6)
+Campos: id, nombre, resumen (1 línea), desde (precio de ejemplo o «A cotizar»), incluye[3], productos[3], icono. Los precios de servicios se marcan en el código como [PRECIO_REAL]. «Cómo funciona» es común a todos: 1 Cuéntanos qué necesitas, 2 Confirmamos detalles, precio y fecha, 3 Reservas con el anticipo.
+personalizados | Pasteles a medida | Tu idea, diseñada y horneada para tu fecha | Desde $32 | Revisión de tu referencia y propuesta de diseño · Confirmación de sabores, tamaño y mensaje antes de empezar · Aviso del plazo y del cupo reales | per-01, per-02, per-03
+bodas | Pasteles de boda | Diseño, degustación y entrega coordinada | A cotizar | Diseño según tu paleta y estilo · Degustación previa [CONFIRMAR_CONDICIONES] · Entrega y montaje en el lugar | bod-01, per-02, com-02
+mesa-dulce | Mesas de postres | Variedad de postres para tus invitados | Desde $350 | Selección según número de invitados · Exhibidores y montaje [CONFIRMAR_INCLUSIONES] · Cartelas con nombre y alérgenos de cada postre | bod-02, ind-01, pos-03
+corporativo | Pedidos para empresas | Detalles y postres para equipos y eventos | A cotizar | Pedidos por volumen con factura [DATOS_FISCALES] · Empaque con tu marca [CONFIRMAR_CANTIDAD_MÍNIMA] · Entregas programadas | ind-01, pos-01, pos-02
+degustacion | Caja de degustación | Prueba los sabores antes de decidir | Desde $22 | Porciones pequeñas de 4 sabores · Guía de rellenos y coberturas · Condiciones de abono al pedido [CONFIRMAR_CONDICIONES] | ind-02, ind-03, pos-03
+entregas | Entrega a domicilio | Tu pedido llega listo y bien cuidado | Desde $3 | Zonas y franjas horarias definidas · Transporte pensado para pasteles · Aviso al salir y al llegar | com-01, ind-01, cel-01
+5.7 Zonas de entrega
+ZONAS_ENTREGA: retiro | Retiro en [DIRECCIÓN] | $0; z1 | [ZONA_1] | $3.00; z2 | [ZONA_2] | $5.00; z3 | [ZONA_3] | $8.00 (costos de ejemplo, [COSTO_REAL]); otra | Otra zona | se cotiza por WhatsApp y el total muestra «Envío a cotizar».
+5.8 Galería, testimonios, hitos y equipo
+Galería (12 diseños): id, nombre descriptivo (por ejemplo «Pastel floral de 2 pisos»), ocasion, ilustracion, base (id de producto o diseño codificado). Mientras no haya fotos reales se muestran ilustraciones rotuladas «Ilustración de referencia»; con foto se usa <img> con width, height, alt y loading=lazy. Marcadores [FOTO_1] a [FOTO_12].
+Testimonios (3, marcadores): [TESTIMONIO_1/2/3] con [NOMBRE], [CIUDAD], estrellas y enlace: 1 → cel-01, 2 → servicio personalizados, 3 → servicio corporativo.
+Hitos (5): [AÑO] + [HITO]. Equipo (3): [NOMBRE], [CARGO], iniciales en círculo hasta recibir [FOTO]. Aliados (opcional): [ALIADOS] (floristerías, salones); si no hay, omitir el bloque.
+5.9 Temporadas
+TEMPORADAS: arreglo con id, nombre [NOMBRE_TEMPORADA], desde, hasta, limitePedidos (cada fecha AAAA-MM-DD, [FECHA]), cat, destacados[] (ids) y mensaje. Una temporada está activa solo si hoy cae entre desde y hasta y las fechas son válidas; las entradas con marcadores sin reemplazar se ignoran sin error. Cuando hay una activa: banda en Inicio, texto en la barra de aviso («Pedidos para [nombre] hasta [limitePedidos]») y chip en Pasteles.
+5.10 Preguntas frecuentes (9)
+Cada respuesta se arma con datos reales de CONFIG y DATA cuando existen; lo que dependa de una política usa marcador. Se emite también como JSON-LD FAQPage.
+¿Con cuánta anticipación debo pedir? Plazo mínimo y máximo calculados desde los datos; el calendario muestra la primera fecha posible para tu pedido.
+¿Cómo reservo mi fecha? Con un anticipo del [ANTICIPO_PORCENTAJE]%; el saldo se paga [CUÁNDO_SE_PAGA_EL_SALDO].
+¿Puedo cambiar o cancelar? [POLÍTICA_CANCELACIÓN].
+¿Cómo manejan alergias y dietas? Enlace a #/alergenos y mención de contaminación cruzada.
+¿Hacen entregas y cuánto cuestan? Tabla de zonas generada desde ZONAS_ENTREGA.
+¿Cómo conservo y transporto mi pastel? Enlace a #/cuidados.
+¿Puedo traer mi propio diseño? Sí, con una imagen de referencia por WhatsApp; el resultado es una interpretación hecha a mano [CONFIRMAR_ALCANCE].
+¿Hacen pedidos para empresas? Enlace al servicio corporativo.
+¿Cómo sé que mi pedido está confirmado? Solo cuando [NOMBRE_EMPRESA] responde confirmando y recibe el anticipo; enviar el formulario no reserva la fecha.
+5.11 Estados de pedido (seguimiento)
+Recibido → Anticipo confirmado → En preparación → Listo para retiro o entrega → Entregado. #/seguimiento tiene un campo de folio: si existe ENDPOINT_ESTADO consulta y dibuja la línea de estados; si no, explica los estados y abre WhatsApp con el folio. LIMITACIÓN documentada en el código.
+6. SISTEMA DE DISEÑO
+6.0 Dirección de arte y revisión anti-genérico (obligatoria, antes de 6.1)
+Esta sección incorpora las reglas de dos skills de diseño, frontend-design (Anthropic) y taste-skill (variante design-taste-frontend), adaptadas a un sitio estático de un solo archivo y al rubro de pastelería. Cuando una regla de las skills choca con un valor de ejemplo de las secciones 1 a 14, manda esta sección. La palabra del cliente manda sobre todo.
+6.0.1 Parte del sujeto, no de la plantilla
+Antes de elegir un color o una tipografía, escribe en una línea: el sujeto concreto ([NOMBRE_EMPRESA], su especialidad y su ciudad), el público (quién encarga, para qué ocasión, desde qué dispositivo) y el trabajo principal del sitio (dejar un encargo completo con fecha, precio y alérgenos claros). Si el cliente no definió el sujeto, propón uno y decláralo en el brief.
+Las decisiones visuales salen del mundo de la pastelería real: materiales (mantequilla, azúcar, fondant, harina, cacao), herramientas y empaques (moldes, mangas, papel encerado, cajas, cintas, cordel), el vocabulario del oficio y el lugar. Una pastelería de bodas, una de cupcakes infantiles y una de tortas caseras no se ven igual, y el sitio debe poder distinguirse de la de al lado.
+Contenido real antes que relleno: la maqueta usa los datos y textos reales de este documento. Ningún texto de plantilla («Lorem ipsum», «Producto 1», «Título aquí»).
+6.0.2 Plan de diseño en dos pasadas
+Primera pasada, plan compacto. Color: 4 a 6 valores con nombre y hex. Tipografía: las familias y el rol de cada una. Composición: un concepto en una frase, un esquema ASCII del hero y otro de la grilla del catálogo, y la alineación (izquierda por defecto; centrado solo en bloques cortos; justificado, nunca). Principios: qué hace único a este sitio, en 3 líneas.
+Segunda pasada, revisión. Pregúntate qué plan producirías para cualquier otra pastelería. Si una parte coincide con un default de 6.0.3, cámbiala y anota qué cambiaste y por qué. Solo cuando el plan pasa la revisión empiezas a escribir código.
+Ambas pasadas se resumen en el comentario del brief (Paso 1 de la sección 2). No se narran fuera del archivo.
+6.0.3 Defaults genéricos: se evitan salvo que el brief los pida o la revisión los justifique
+Los modelos de IA convergen en los mismos rasgos. No están prohibidos: son defaults, no decisiones. Úsalos solo si el cliente los pide con sus palabras o si la revisión demuestra que nacen de este negocio.
+Crema cálida (cerca de #F4F1EA) con serif de alto contraste y acento terracota o arcilla (cerca de #D97757). Es el rasgo más repetido en pastelerías generadas. La paleta de ejemplo de 6.1 (crema, cacao, frambuesa) y la pareja Fraunces y Montserrat están en esa vecindad y deben ganarse su lugar en la revisión.
+Fondo casi negro con un único acento verde ácido o bermellón.
+Maquetación de periódico: filetes finos, esquinas rectas y columnas densas.
+Kit de tarjetas de SaaS: el contenido troceado en tarjetas idénticas, el mismo radio en todo, la misma sombra gris suave y lavados de degradado como decoración.
+Adornos de plantilla que aparecen sin importar el tema:
+etiqueta en MAYÚSCULAS con tracking amplio sobre cada encabezado;
+datos unidos con puntos medios («A · B · C») o con rayas («PALABRA — fragmento»);
+negro teñido genérico (#0B0B0B, #111) en lugar de un color con intención;
+fuente monoespaciada para etiquetas pequeñas;
+el carácter «→» pegado al texto de enlaces y botones.
+Añadidos de taste-skill:
+Prohibición del lila: degradados morado-azul, botones con resplandor y neones.
+Emojis en código, marcado, textos o atributos alt.
+Inter, Roboto, Arial, Open Sans o Helvetica como tipografía de marca.
+Héroe centrado con título, subtítulo y botones apilados.
+Tres columnas iguales de tarjetas como respuesta a todo.
+Nombres y cifras de relleno («Juan Pérez», «Acme», «100%», «+1000 clientes»). Sigue vigente la regla de la sección 0: nunca cifras, reseñas ni premios inventados.
+Textos de marketing vacíos (ver 6.0.10).
+6.0.4 Tres diales (de taste-skill, calibrados para este rubro)
+Declara en el brief los tres valores (escala de 1 a 10). Son valores de partida; si el cliente pide otro carácter («más sobrio», «más divertido», «catálogo denso»), ajústalos y dilo.
+VARIANZA = 7 (1 = simetría perfecta, 10 = caos artístico). Por encima de 4 el héroe no va centrado: composición asimétrica, con el pastel descentrado y desbordando su columna. La grilla de productos sigue siendo regular, porque comparar tamaños y precios exige orden.
+MOVIMIENTO = 4 (1 = estático, 10 = cinematográfico). De 1 a 3: solo estados de hover y foco. De 4 a 7: transiciones de transform y opacity, stagger corto y una coreografía de entrada. De 8 en adelante: física y efectos continuos, que no se usan aquí. La sección 14 se aplica con el presupuesto de 6.0.8. De taste-skill no se adoptan los botones magnéticos ni las microanimaciones perpetuas porque chocan con 14.1; solo se conserva el parpadeo de las velas ya definido.
+DENSIDAD = 4 (1 = galería, 10 = cabina de datos). Espaciado generoso y una idea por pantalla en Inicio. El catálogo y el configurador pueden subir a 6 en sus herramientas (filtros, resumen y precio). Desde 7 se eliminan las cajas y se agrupa con filetes y espacio.
+6.0.5 Estructura visual: la forma comunica
+Los bordes, filetes, numeración y etiquetas codifican información sobre el contenido; no decoran. Cada uno debe poder explicarse: «separa X de Y», «indica el orden».
+Numeración solo si el contenido es una secuencia real. Sí: Cómo pedir, Cómo cotizamos, Cómo trabajamos y los pasos del configurador. No: las 4 capas del pastel, los valores y las categorías.
+«Tarjeta» en este documento significa bloque enlazado (regla de tarjetas de la sección 4), no caja. Solo llevan contenedor visible (fondo o borde) la tarjeta de producto, la de categoría y la de diseño de la galería, porque son objetos comparables. Servicios, confianza, pasos, testimonios, equipo y valores se dibujan como filas o columnas sin caja, separadas por espacio y filetes de 1px, sin sombra, sin radio y sin fondo de color. El stretched link funciona igual.
+Cada nivel de la jerarquía tiene su radio, borde y fondo (6.4): nunca el mismo radio en todo ni la misma sombra bajo cada bloque.
+El hero abre con lo más característico del mundo de la pastelería, en la forma adecuada. Aquí es el pastel que se arma (momento firma 1), no un número grande con etiqueta, métricas de apoyo y degradado.
+6.0.6 Tipografía deliberada
+Una o dos familias. Si son dos, claramente distintas (por ejemplo, una display con carácter y una sans neutra de lectura); nunca dos parecidas.
+Elige por el sujeto, no por inercia. Por defecto no se usan: Inter, Roboto, Arial, Open Sans, Helvetica ni las serif de alto contraste que se repiten en toda «pastelería elegante» (Playfair Display, Cormorant, DM Serif Display). Fraunces y Montserrat (v4) se mantienen solo si el cliente las pide o si la revisión de 6.0.2 las justifica por escrito en el brief.
+Opciones a evaluar, todas disponibles en Google Fonts: para titulares con personalidad de rotulación y obrador, Caprasimo, Young Serif, Gloock o Bricolage Grotesque; para interfaz y lectura, Figtree, Onest, Instrument Sans, Schibsted Grotesk o Geist. La lista es una ayuda, no un mandato: se puede elegir otra si se justifica.
+La tipografía lleva la personalidad de la página: el tratamiento del titular (tamaño, peso, tracking, interlineado) es parte activa del diseño, no un vehículo neutro del contenido. Display con tracking ligeramente cerrado; texto corrido con tracking 0.
+Escala tipográfica definida con intención (valores de 6.2), con pesos y anchos pensados y siguiendo las convenciones de The Elements of Typographic Style.
+Longitud de línea menor a 80 caracteres (68ch en 6.2). Si el cuerpo es serif, interlineado ligeramente mayor que en sans (1.65 frente a 1.6).
+Tratamientos genéricos que se evitan: (1) acentuar una sola palabra o frase de un titular con cursiva, negrita o color; (2) MAYÚSCULAS en etiquetas, insignias o encabezados pequeños; (3) etiquetas tipográficas innecesarias encima del contenido (eyebrows decorativos).
+6.0.7 Color con criterio
+Paleta base de 4 a 6 valores con nombre, definida en OKLCH con respaldo hex (6.1). Armónica: relaciones de matiz pensadas, no un arcoíris pastel sin cohesión.
+Un solo color de acción (el que lleva a pedir) y saturación contenida: nada de colores neón; la marca queda en croma ≤ 0.19 en OKLCH (≈ menos de 80% de saturación). Los acentos secundarios son detalles, nunca superficies grandes.
+Neutros con el tinte del matiz de marca; sin gris puro y sin #000 ni #FFF como fondos grandes.
+Prohibición del lila: ningún degradado morado-azul ni resplandor de neón. Un degradado solo existe si tiene razón de ser (el glaseado, el fondo de una ilustración) y nunca decora superficies de interfaz.
+Contraste mínimo 4.5:1 en texto y 3:1 en componentes (sección 15).
+6.0.8 Movimiento con presupuesto
+El movimiento que el usuario no dispara se usa poco y con propósito. El sitio tiene un solo momento orquestado de carga: el hero (14.3, animaciones 1 y 2). Todo lo demás responde a una acción del usuario (abrir, expandir, agregar, confirmar) y muestra qué cambió.
+Por defecto NO: entrada con fade y desplazamiento hacia arriba en cada sección, hover animado en cada tarjeta, contadores por todas partes, parallax en varios bloques. Son los marcadores más repetidos de las páginas generadas.
+Presupuesto: máximo 3 momentos coreografiados en Inicio (hero, slider «Por dentro» y una línea de tiempo) y 1 en las demás vistas.
+Los efectos de textura (grano, blur) nunca van sobre contenedores que se desplazan. Solo se animan transform y opacity (14.1).
+6.0.9 Contención y autocrítica
+Gasta la audacia en un solo lugar: lo memorable es el pastel del hero; el resto es silencioso y disciplinado. Corta toda decoración que no sirva al brief. Antes de entregar, quita un elemento decorativo («quita un accesorio antes de salir de casa»).
+Suelo de calidad, sin anunciarlo: responsive desde 320px, foco visible, prefers-reduced-motion respetado, contraste accesible y paleta armónica.
+Si el entorno permite inspeccionar el resultado (capturas, vista previa), revísalo como diseñador: ¿se distingue de otra pastelería? Si no, vuelve a 6.0.2.
+Deja en el comentario del brief una línea de «lo que descarté», para no repetirlo en la siguiente iteración.
+6.0.10 Escritura como parte del diseño
+Cada texto existe para que la interfaz se entienda y se use. Antes de escribir, define qué necesita decir y cuál es la forma más corta de decirlo.
+Desde el punto de vista de quien encarga: nombra las cosas como las entiende («fecha de entrega», «porciones», «anticipo»), no como están construidas por dentro.
+Voz activa. El botón dice exactamente lo que ocurre: «Enviar pedido por WhatsApp», no «Enviar»; «Guardar en favoritos», no «OK». Una acción conserva su nombre en todo el flujo: el botón «Agregar al pedido» termina en «Agregado» y en el toast «[Nombre] agregado a tu pedido».
+Errores: dicen qué falló y cómo corregirlo, con la voz de la interfaz (no la de una persona), sin disculpas ni vaguedades. Estados vacíos: una invitación a actuar.
+Tono conversacional: verbos simples, mayúscula solo de inicio de frase (sentence case), sin relleno. Un elemento escrito, un trabajo.
+Se evitan los superlativos y los clichés de pastelería («los mejores», «hechos con amor», «endulza tu día», «irresistible», «sabor que enamora»), los saludos vacíos («Bienvenido a», «Descubre»), los signos de exclamación y los emojis. Describe lo que el producto es y hace en lenguaje llano (sabores, capas, porciones, plazo), sin venderlo.
+Los datos de ejemplo usan nombres específicos y verosímiles y se señalan como ejemplo; ninguna cifra inventada se presenta como real.
+6.0.11 Reglas técnicas de taste-skill adaptadas a HTML, CSS y JS vanilla
+Sin emojis en código, marcado, textos ni atributos alt. Solo íconos SVG del sprite con un único grosor de trazo (1.75px).
+Alturas de pantalla completa con min-height en dvh (con vh declarado antes como respaldo); nunca height: 100vh, que se corta en móviles con barra de navegación dinámica.
+CSS Grid para estructuras de columnas; prohibido simularlas con anchos como calc(33% - 1rem) en flexbox.
+Contenedor con max-width y padding-inline fluido (6.3); breakpoints únicos y estandarizados (480, 768, 1024, 1280).
+Cobertura completa de estados en todo elemento interactivo: reposo, hover (solo con hover:hover), :focus-visible, :active, disabled, cargando, error y vacío. Ningún componente se entrega solo con el estado de reposo.
+Formularios: etiqueta visible arriba del campo, ayuda opcional presente en el marcado y error debajo del campo (7.17).
+Móvil garantizado: una columna bajo 480px, sin scroll horizontal a 320px, objetivos táctiles de 44px o más.
+Edición quirúrgica: si este prompt se usa para modificar un index.html existente, cambia solo lo que se pide; no cambies paleta, tipografía ni componentes vecinos por tu cuenta.
+Conserva el idioma del proyecto: todo el contenido visible va en español neutro latinoamericano (sección 0).
+6.1 Color (variables en :root, definidas en OKLCH con fallback hex en una declaración previa)
+Paleta de partida, sujeta a la revisión de 6.0.3: si el plan de 6.0.2 produce una paleta propia, esta se reemplaza conservando los nombres de variable. Valores aproximados: verifica contraste y ajusta antes de entregar. Neutros siempre con tinte (en esta paleta, cálido: matiz 70 a 80, croma 0.01 a 0.035); prohibido el gris puro.
+Fondos y superficies: --bg #FBF6EE (oklch .975 .014 82) | --bg-alt #F5EBDC (oklch .945 .028 80) | --surface #FFFDF9 | --surface-2 #F1E4D1 | --border #E4D3BC | --border-strong #CDB696
+Banda oscura de cacao: --cacao #2A1810 (oklch .21 .035 50) | --cacao-2 #3A2419 | --on-cacao #FBF6EE | --on-cacao-soft #D9C7B2 | --border-cacao #54392B. Dentro de .band-dark se redefinen las variables de texto, borde y superficie.
+Texto sobre claro: --text #2A1810 | --text-soft #6B5446 | --text-faint #7D6859 (solo metadatos; debe cumplir 4.5:1 sobre --bg)
+Marca y acción: --brand #B3264F (oklch .52 .19 10, frambuesa) | --brand-hover #961E41 | --brand-deep #7A1634 | --brand-soft rgba(179,38,79,.10) | --on-brand #FFFFFF
+Acento cálido: --caramelo #C47A1E (oklch .66 .13 70), solo para estrellas de valoración, precio anterior de promoción y detalles de ilustración.
+Estados: --success #2E7D4F | --warning #A55A00 | --danger #B3261E
+Uso del color: frambuesa = acción de pedir, enlaces, foco y estados activos. Nunca frambuesa como relleno grande y botón primario en la misma tarjeta. Foco visible en toda la interfaz: outline 2px --brand, offset 2px (sobre bandas cacao: --on-cacao).
+Tonos fijos de ilustración: bizcocho #E8C48A, crema #FFF4E0, chocolate #5B3A29, fresa #C94768 y caramelo como acento.
+6.2 Tipografía
+--font-display y --font-ui: las familias elegidas en 6.0.6 (una o dos, claramente distintas si son dos), cada una con una pila de respaldo real (serif o sans-serif del sistema). Respaldo, solo si la revisión de 6.0.6 no llega a una elección propia ni el cliente define nada: Fraunces para titulares y Montserrat para interfaz y texto.
+Display: clamp(2.5rem, 1.2rem + 5.2vw, 4.25rem) / 1.02 / --font-display 600 / -0.02em
+H1: clamp(2rem, 1.2rem + 2.8vw, 3rem) / 1.08 / --font-display 600 / -0.015em
+H2: clamp(1.625rem, 1rem + 1.8vw, 2.25rem) / 1.15 / --font-display 600
+H3: 1.25rem / 1.3 / --font-ui 600 (nombres de producto: 1rem / 600)
+Cuerpo: 1rem / 1.6 / 400; cuerpo grande 1.125rem en hero y subtítulos. Pequeño: .875rem / 1.5.
+Etiqueta de dato (solo donde nombra un dato real, como la categoría de un producto): .75rem / 1.3 / --font-ui 600 / mayúscula solo de inicio / sin tracking / --text-soft. No existen eyebrows decorativos encima de los encabezados (6.0.6).
+Precios: --font-ui 700 con font-variant-numeric: tabular-nums. Títulos: text-wrap: balance. Párrafos: text-wrap: pretty; max-width 68ch.
+Énfasis: ningún titular acentúa una sola palabra o frase con cursiva, negrita o color (6.0.6). Nunca fuentes script ni manuscritas.
+6.3 Espaciado y layout
+Escala: 4, 8, 12, 16, 24, 32, 48, 64, 96, 128 (--s-1 a --s-10). Padding vertical de sección: 96px escritorio, 64px móvil.
+Contenedor: max-width 1280px; padding-inline clamp(16px, 4vw, 40px). Grilla de 12 columnas, gap 24px (16px móvil).
+Maquetación con CSS Grid; prohibido simular columnas con anchos calc(33% - gap) en flexbox. Alturas de pantalla completa con min-height en dvh y vh declarado antes como respaldo, nunca height: 100vh (6.0.11).
+Breakpoints: 480, 768, 1024, 1280 (mobile-first, min-width).
+Bandas alternas: crema (--bg) / masa (--bg-alt) / cacao (.band-dark) para dar ritmo; nunca dos bandas iguales seguidas.
+Divisor de glaseado: el borde superior de una banda cacao puede ser ondulado, con goteos irregulares (path SVG de una sola tinta, aria-hidden, 24 a 40px de alto). Es el único elemento decorativo de marca; máximo 2 por vista.
+6.4 Forma y profundidad
+Radios: botones 10px, tarjetas 18px, medios de producto 14px, modales 24px, chips 999px. Bordes de 1px.
+Sombra cálida solo en modal y drawer (0 24px 64px oklch(.2 .04 50 / .35)); las tarjetas no llevan sombra. Sin glows ni resplandores.
+Hover de las tarjetas con caja (producto, categoría y diseño): borde --brand y escala de la imagen a 1.03; sin elevación ni sombra. En bandas cacao: fondo --cacao-2. Los bloques sin caja (6.0.5) no llevan radio ni hover de contenedor: solo subrayado del enlace.
+6.5 Íconos e ilustraciones
+Íconos: SVG de trazo 1.75px, esquinas redondeadas, 24×24, currentColor. Necesarios: bolsa (pedido), buscar, menú, cerrar, flecha, check, calendario, reloj, camión (entrega), tienda (retiro), corazón (favorito), compartir, ayuda, escudo (alérgenos), WhatsApp, estrella, filtro, chevron, más, menos, copiar, imprimir.
+Ilustraciones de producto (20 <symbol>, viewBox 0 0 240 180, SIN cajas grises): pastel redondo de 1 piso, de 2 pisos y de 3 pisos, pastel de bandeja con porción cortada, tres leches (porción), cheesecake (porción), cupcake, caja de 6 cupcakes, mini pastel, cake pop, galleta decorada, brownie, macaron, postre en vaso, caja de regalo, velas, topper, mesa de postres, pastel con figura y pastel semidesnudo. Construidas con rect, ellipse, circle y path; 5 tonos de la paleta (bizcocho, crema, chocolate, fresa y caramelo como acento). Estilo geométrico de trazos limpios, coherente entre todas; las porciones muestran capas visibles (bizcocho, relleno, cobertura).
+Ilustraciones del configurador: bloques reutilizables por piso (cuerpo, cobertura, drip, flores, frutas, topper, velas) que se componen en una sola SVG (ver 9.3).
+7. COMPONENTES (ESPECIFICACIÓN)
+7.1 Barra de aviso
+Altura 40px, fondo --cacao, texto --on-cacao 13px. Izquierda: estado «Abierto ahora, cierra a las [hora]» o «Cerrado, abrimos [día] a las [hora]», calculado con HORARIO_SEMANAL y ZONA_HORARIA y refrescado cada 60 s sin animación. Centro: «Próxima fecha disponible: [fecha]» o el aviso de la temporada activa. Derecha: botón cerrar (se recuerda en sessionStorage). Es una región con aria-label, no anuncia cambios.
+7.2 Header
+Altura 72px (64px móvil), fondo --bg sólido (sin blur de cristal), borde inferior 1px --border que aparece al hacer scroll (180ms). Izquierda: logo [LOGO] (SVG simple + [NOMBRE_EMPRESA]). Centro (desde 1024px): 5 pestañas (14px/600, padding 8px 16px): Inicio, Pasteles, Arma tu pastel, Eventos y servicios, Nosotros, con indicador de 2px en --brand que se desliza. Derecha: buscar (lleva a #/pasteles con el buscador enfocado), Mi pedido (ícono de bolsa con contador; desde 1280px muestra también el subtotal) y botón primario sm «Cotizar» (oculto bajo 768px). Debajo del header, barra de progreso de scroll de 2px en --brand. Menú móvil: panel desde la derecha, 100% de alto, enlaces de 18px/600, accesos a WhatsApp y estado abierto/cerrado, cierre con Esc.
+7.3 Botones
+Alto 48px (md), 40px (sm), 56px (lg); padding-inline 24px; radio 10px; peso 600; sin MAYÚSCULAS; área táctil mínima de 44px siempre (en sm se extiende con ::before). Variantes: primario (fondo --brand, texto --on-brand, hover --brand-hover), secundario (borde 1px --border-strong, texto --text, hover borde --brand), terciario (texto con subrayado de 1px; si lleva a otra vista, un ícono de flecha SVG avanza 4px en hover), inverso (para banda --brand-deep: fondo blanco, texto --brand-deep), WhatsApp (secundario con ícono; no se introduce un verde de marca). Estados: hover 150ms; active scale(.97) 100ms; disabled opacity .5 sin hover; loading con spinner de 16px a 600ms por vuelta.
+7.4 Chips y selectores
+Chip de filtro: alto 36px (área táctil 44px), padding 0 16px, borde 1px --border, texto 14px; activo: fondo --brand-soft, borde --brand, texto --text; contador opcional (ej. «Cupcakes 4»).
+Opción tarjeta del configurador: <input type=radio|checkbox> nativo, enfocable, dentro de un <label> de al menos 56px con nombre, descripción corta y recargo («+$3.00» o «Incluido»). Seleccionada: borde 2px --brand y check. Agrupadas en fieldset con legend.
+Swatch de color: círculo de 40px con borde y el nombre debajo; seleccionado: anillo de 2px y check. Nunca solo color.
+7.5 TARJETA DE PRODUCTO (<article>)
+Contenedor: fondo --surface, borde 1px --border, radio 18px, padding 12px, gap 12px.
+Media: aspect-ratio 4/3, fondo --bg-alt, radio 14px, ilustración SVG o foto (object-fit: cover). Insignia arriba-izquierda a 12px (altura 24px, 12px/600, mayúscula solo de inicio): Nuevo = fondo --brand con texto --on-brand; Temporada = borde --caramelo con texto --text; Más pedido = fondo --surface-2; Por encargo = borde --border-strong; Agotado = --text-faint sobre --surface-2. Arriba-derecha: botón de favorito (corazón, 44px, aria-pressed, aria-label «Guardar [nombre] en favoritos»).
+Cuerpo: categoría (etiqueta de dato, 6.2); nombre 16px/600, máximo 2 líneas, es el <a> con stretched link; descripción de 2 líneas en 13px --text-soft (la segunda se oculta bajo 640px); etiquetas de dietas disponibles (máx. 2 más «+N», texto de 12px con ícono); rating (estrellas de 14px en --caramelo y «4.7 (86)» en 13px).
+Precio: «Desde» en 12px y precio en 20px/700 tabular-nums; con promoción: precio anterior tachado y chip «-N%».
+Disponibilidad: punto de 8px + texto de 12px: «Hoy: quedan 2» (--warning) o «Por encargo, desde [fecha]» (--text-soft, fecha calculada por SCHEDULE).
+Pie: texto terciario «Elegir tamaño», parte del mismo enlace (no es otro foco). Agotado: media a opacity .5 y escala de grises; el pie pasa a «Avisarme por WhatsApp» (botón secundario sm independiente con z-index 2).
+Responsive: 1 columna bajo 420px; 2 columnas de 420 a 1023px; 3 de 1024 a 1279px; 4 desde 1280px.
+7.6 TARJETA DE CATEGORÍA
+Alto mínimo 220px; fondo --surface; ilustración grande a la derecha (≈55% del ancho) recortada por el borde; nombre H3 abajo-izquierda; subtexto de 13px y «N productos»; flecha circular de 40px que aparece y avanza en hover. Jerarquía: la primera tarjeta (Pasteles de celebración) ocupa 2 columnas × 2 filas, la segunda (Personalizados) 2 × 1, el resto 1 × 1. Nunca 6 tarjetas iguales.
+7.7 TARJETA DE SERVICIO
+Bloque enlazado sin caja (6.0.5), separado de los demás por un filete superior de 1px: ícono de 32px sin contenedor de color; nombre H3; resumen de 14px; lista «Incluye» de 3 ítems con check; fila inferior: «Desde $X» + botón terciario «Cotizar».
+7.8 BLOQUES DE CONFIANZA (barra, 4)
+Cuatro bloques sin caja en una fila, separados por filetes verticales de 1px (sin fondo, borde ni sombra). Ícono de 32px, dato en 18px/700, descripción de 13px; se leen como enlaces (destinos en la sección 4). Contenido sin cifras inventadas: «Plazos claros» + «Primera fecha libre: [fecha]» | «Entregas en [ZONAS]» + «Retiro en [DIRECCIÓN]» | «Alérgenos a la vista» + «Dietas bajo pedido» | «Reserva con anticipo» + «[ANTICIPO_PORCENTAJE]% para asegurar tu fecha».
+7.9 TARJETA DE PASO («Cómo pedir»)
+Bloque sin caja. Número grande de 40px en --font-display 600 y color --brand (la numeración es válida porque los 4 pasos son una secuencia real), título H3, 2 líneas de texto, enlace terciario.
+7.10 TARJETA DE DISEÑO (galería) y VISOR
+Media 4/5 con ilustración o foto, nombre de 14px/600 en el enlace, chip de ocasión. Visor: modal de 960px con imagen grande, nombre, ocasión, botón «Pedir uno parecido», anterior/siguiente (teclas ← →) y Esc para cerrar.
+7.11 TESTIMONIO y EQUIPO
+Testimonio (bloque sin caja, separado por filetes): estrellas, cita de 16px (máx. 3 líneas en la tarjeta), nombre y ciudad, y debajo «Pedido: [nombre]» como enlace. Equipo: círculo de 72px con iniciales (--surface-2), nombre, cargo y enlace «Escribir por WhatsApp».
+7.12 Modal (producto, servicio, diseño, cotizar, pedido, seguimiento, FAQ, cuidados, alérgenos, políticas, privacidad)
+Ancho máx. 960px (producto y diseño), 720px (pedido), 560px (formularios y textos); radio 24px; backdrop rgba(20,10,5,.6); focus trap; Esc cierra; clic en el backdrop cierra (en #/pedido, si hay datos escritos, pide confirmar); scroll del body bloqueado; foco inicial en el título; al cerrar, el foco vuelve al elemento que lo abrió. role=dialog, aria-modal, aria-labelledby.
+Modal de producto (escritorio: 2 columnas 55/45). Izquierda: galería (imagen principal 4/3 + 3 miniaturas: vista general, corte con capas, escala con porciones). Derecha: breadcrumb, H2 con el nombre, rating, resumen de 2 líneas y el bloque de compra, en este orden:
+Selector de tamaño (opciones tarjeta con porciones y precio).
+Dietas disponibles (casillas con recargo) y aviso de alérgenos.
+Mensaje en el pastel (opcional, máx. 40 caracteres, contador) o «Sin mensaje».
+Línea informativa «Primera fecha disponible: [fecha]». La fecha definitiva se elige en el checkout.
+Cantidad (stepper de 40px, mín. 1, máx. 10), precio total en vivo, botón «Agregar al pedido» (lg, primario), «Preguntar por WhatsApp» (secundario), «Guardar» y «Compartir» (navigator.share si existe; si no, copia el enlace y avisa con un toast).
+Debajo, a ancho completo: tabla «Detalles» (porciones, sabores, cobertura, plazo, conservación), bloque «Alérgenos y dietas» (con enlace a #/alergenos), bloque «Qué incluye» (3 ítems), bloque «Conservación y transporte» (enlace a #/cuidados) y las tarjetas enlazadas de la sección 4. Los complementos no tienen dieta ni mensaje.
+7.13 Drawer «Mi pedido»
+440px de ancho (100% en móvil), desde la derecha. Cada línea: miniatura de 64px, nombre enlazado, resumen de opciones (tamaño, sabores, mensaje) en 13px, precio, stepper, quitar; las del configurador llevan «Editar diseño». Bloques: «Fecha más próxima: [fecha]» (la mayor entre los plazos de las líneas), cupón (campo plegado), subtotal, «Envío a coordinar» o su costo si ya hay zona, anticipo estimado ([ANTICIPO_PORCENTAJE]% del total). Botón primario «Continuar con el pedido» y secundario «Seguir viendo». Estado vacío: ilustración, «Tu pedido está vacío», y botones «Ver pasteles» y «Armar mi pastel».
+7.14 CALENDARIO DE ENTREGA (componente reutilizable)
+Se usa en el paso 6 del configurador, en el checkout y en la cotización.
+Cuadrícula mensual con role=grid, encabezados de día (lunes primero, configurable), botones de día de al menos 44px, navegación de mes anterior y siguiente.
+Estados con texto y patrón, no solo color: Disponible; Pocos cupos (punto y texto); Lleno; Cerrado o bloqueado; Anterior al plazo (con el motivo en el texto de ayuda: «Este pedido necesita [N] días de anticipación»). Los no disponibles llevan aria-disabled=true y su motivo al enfocarlos.
+Teclado: flechas ±1 día y ±1 semana, Home y End (inicio y fin de semana), PageUp y PageDown (±1 mes), Enter o espacio selecciona. El día elegido lleva aria-selected=true.
+Leyenda visible bajo la cuadrícula. Al elegir fecha aparecen las franjas como chips (las ya pasadas de hoy se ocultan); si es retiro se muestra el horario del local.
+Todo el cálculo sale de SCHEDULE (13.2). Un mes sin días libres muestra «Sin fechas libres este mes» y un botón «Ir al próximo mes con fechas».
+7.15 STEPPER del configurador
+Lista ordenada de 6 pasos con aria-current=step y línea de progreso (scaleX). Pasos completados con check y navegables; los futuros quedan deshabilitados hasta completar los obligatorios. En móvil muestra «Paso N de 6: [nombre]» y una barra.
+7.16 Toast
+Abajo-centro en móvil, abajo-derecha en escritorio, 340px, máx. 3 apilados, role=status, se cierra a los 3.5 s (pausa en hover y foco).
+7.17 Formularios (cotización y checkout)
+Campos: nombre*, WhatsApp* (solo dígitos y +, validar de 8 a 15 dígitos), correo (opcional), fecha, número de personas, servicio y producto (select preseleccionados), mensaje (textarea de 4 filas). Labels visibles arriba, ayuda de 12px, atributos autocomplete correctos. Validación al salir del campo (blur) y al enviar; el error aparece bajo el campo con role=alert y dice qué corregir («Escribe tu WhatsApp con código de país, por ejemplo +593...»). Éxito: check animado + «Listo, [NOMBRE]. Te escribimos por WhatsApp en [TIEMPO_RESPUESTA]» y botón que abre WhatsApp con el resumen.
+7.18 Skeleton, estados vacíos, acordeón y bottom sheet
+Skeleton: bloques --surface-2 con shimmer horizontal (1.4s, linear, infinite), solo en la carga inicial del catálogo (≈500ms) y respetando reduced-motion.
+Estado vacío del catálogo: ilustración + «No encontramos resultados para “[búsqueda]”» + chips de categorías + botón «Limpiar filtros».
+Acordeón: <details> y <summary>; no se anima la altura: abre al instante y el contenido hace fade de 150ms.
+Bottom sheet de filtros en móvil: panel inferior con botón «Filtros (N)», foco atrapado y cierre con Esc.
+7.19 Footer
+Fondo --cacao, texto --on-cacao, divisor de glaseado en el borde superior. 4 columnas (marca y descripción de 2 líneas | Pasteles | Pedidos y empresa | Contacto y horario), aviso de alérgenos, y fila inferior con métodos de pago [MÉTODOS_DE_PAGO] como texto y «© [AÑO] [NOMBRE_EMPRESA]. Todos los derechos reservados.»
+8. VISTA INICIO (ORDEN Y DETALLE)
+8.1 HERO (alto mín. 88dvh, con 88vh declarado antes como respaldo; grilla de 12 columnas asimétrica: texto en 5 columnas alineado a la izquierda y visual en 7 con el pastel descentrado; en móvil texto arriba y visual debajo; fondo --bg)
+H1 (display): «Pasteles hechos a tu medida, listos para tu fecha». Alineado a la izquierda, sin acentuar ninguna palabra con cursiva, negrita ni color.
+Subtítulo: «Elige un pastel del catálogo o arma el tuyo. Te confirmamos diseño, precio y hora de entrega por WhatsApp antes de empezar a hornear.»
+Botones: «Armar mi pastel» (lg, primario) y «Ver pasteles» (lg, secundario).
+Chip: «Próxima fecha disponible: [fecha]», calculado con un pastel sencillo de 1 piso; enlaza al calendario.
+Línea de confianza (3 micro-datos de 13px con ícono, en fila con 24px de separación y sin signos entre ellos): «Anticipo de [ANTICIPO_PORCENTAJE]% para reservar», «Entregas en [ZONAS]» y «Dietas especiales bajo pedido».
+Visual: pastel SVG de 3 pisos de 560×560 (momento firma 1, ver 14.3) con 4 tarjetas flotantes pequeñas («Cumpleaños», «Bodas», «Cupcakes», «Sin gluten») que son enlaces.
+8.2 BARRA DE CONFIANZA: 4 bloques sin caja en una fila (2×2 en móvil), separados por filetes de 1px (7.8).
+8.3 CATEGORÍAS: H2 «Elige por antojo u ocasión», 1 línea de apoyo, grilla asimétrica de 6 tarjetas (7.6). Debajo, fila de chips de ocasión (Cumpleaños, Boda, Baby shower, Bautizo o comunión, Aniversario, Graduación, Corporativo) → #/pasteles?ocasion=<id>.
+8.4 CÓMO PEDIR (banda --bg-alt): H2 «Pedir es simple», 4 tarjetas de paso (7.9) unidas por una línea que se dibuja al entrar en vista. Los textos usan datos reales calculados (plazo mínimo y máximo, anticipo).
+8.5 DESTACADOS: H2 «Los más pedidos», fila de 4 tarjetas (cel-01, cel-04, ind-01, per-01) y enlace «Ver todos los pasteles». Chip «Pronta entrega hoy (N)» solo si hay.
+8.6 BANDA CACAO «POR DENTRO» (divisor de glaseado arriba): izquierda H2 «Cada capa se elige», 2 líneas, lista sin numerar de 4 puntos (bizcocho, relleno, cobertura, decoración) y enlace «Elegir mis sabores». Derecha: slider exterior/interior (14.3, animación 11) con 4 puntos interactivos de 44px que abren una descripción corta.
+8.7 GALERÍA DE DISEÑOS: H2 «Ideas para tu celebración», chips por ocasión que filtran con FLIP, grilla de 6 tarjetas (7.10) en 3 columnas con jerarquía (la primera ocupa 2 filas) y botón «Ver más diseños».
+8.8 TEMPORADA (condicional, 5.9): banda con el nombre, la fecha límite de pedidos y 3 destacados.
+8.9 EVENTOS: H2 «Para días grandes», 3 tarjetas de servicio (bodas, mesa-dulce, corporativo) y enlace «Ver todos los servicios» → #/servicios.
+8.10 TESTIMONIOS (banda --bg-alt): H2 «Lo que dicen nuestros clientes», 3 bloques sin caja (7.11).
+8.11 PREGUNTAS FRECUENTES: 4 en acordeón y enlace «Ver todas las preguntas».
+8.12 CTA FINAL (banda --brand-deep, texto blanco): H2 «¿Ya tienes la fecha?», texto de 1 línea, botón inverso «Armar mi pastel» y secundario «Escribir por WhatsApp».
+8.13 FOOTER (7.19).
+9. VISTA ARMA TU PASTEL (CONFIGURADOR)
+9.1 Estructura
+Encabezado: H1 «Arma tu pastel» y 1 línea: «Responde 6 pasos cortos. Ves el precio estimado y la primera fecha libre mientras eliges.» Debajo, el stepper (7.15) y dos columnas desde 1024px: izquierda (60%) el paso actual; derecha (40%, sticky bajo el header) la vista previa SVG, el resumen, el precio estimado y las acciones. En móvil: vista previa compacta de 200px de alto bajo el stepper y barra inferior sticky con el total y «Siguiente».
+9.2 Pasos
+Ocasión y personas. Opciones de ocasión (5.5) y número de invitados (stepper de 1 a 200) o «No lo sé». Con el número se sugiere el tamaño más pequeño cuyo máximo de porciones alcance; si ninguno alcanza, se sugieren 2 o 3 pisos o cotizar un evento. Es una sugerencia con texto explicativo («Para 30 personas, 2 pisos de 20 + 15 cm rinden 25 a 30 porciones»); nunca cambia la elección sola. Si se llegó con ?base o ?ref, este paso se salta con un aviso visible.
+Tamaño. Opciones tarjeta con porciones, pisos y precio base. La elegida define los pisos de la vista previa.
+Sabores. Un sabor y un relleno para todo el pastel; interruptor «Un sabor distinto por piso» (solo con 2 o más pisos) que muestra un bloque por piso. Una cobertura para todo el pastel. Recargos visibles en cada opción. Las notas de combinación o refrigeración son marcadores [CONFIRMAR_NOTA]; no se inventan maridajes.
+Decoración. Nivel (4 opciones; «escultórica» muestra el aviso de cotización), colores (hasta 2), extras (multi-selección), mensaje en el pastel (máx. 40 caracteres, contador, aparece en vivo en la vista previa), tema o descripción (textarea de hasta 300 caracteres) y enlace de referencia opcional. Nota fija: la imagen de referencia se envía por WhatsApp al terminar, este sitio no sube archivos.
+Dietas y alérgenos. Casillas de dietas con recargo y campo «Alergias importantes»: es obligatorio marcar «No tengo alergias» o describirlas. El aviso [AVISO_ALÉRGENOS] siempre está visible. Si se declara una alergia: «Lo revisamos contigo por WhatsApp antes de confirmar». Nunca se promete seguridad.
+Fecha y entrega. Calendario (7.14) con plazo y cupos calculados con el diseño actual, retiro o entrega (zonas), franja horaria y resumen final.
+9.3 Vista previa (momento firma 2)
+Una sola SVG (viewBox 0 0 480 480) compuesta por piezas: plato, de 1 a 3 pisos (rect con rx, proporciones reales de diámetro), cobertura (color según la elegida), corte de bizcocho visible, drip (path), flores (círculos y pétalos), frutas, macarons, topper con el texto del mensaje, velas y los colores de la paleta elegida. Los cambios usan transiciones CSS de fill, opacity y transform de 180ms --ease-out (interrumpibles); cambiar el número de pisos usa FLIP de 240ms. role=img con aria-label dinámico que resume el diseño. Bajo la vista, texto fijo: «Vista ilustrativa. El resultado final puede variar [CONFIRMAR_TEXTO].»
+Modelo del diseño: ocasion, invitados, tamano, pisos[] (sabor, relleno), cobertura, decoracion, extras[], colores[], mensaje, tema, referencia, dietas[], alergias, fecha, entrega (retiro o zona), franja y base (id de producto, opcional). Se codifica en el parámetro d y en localStorage.
+9.4 Resumen y precio (columna derecha)
+Lista de elecciones con su recargo, «Precio estimado: $X» (o «A cotizar»), «Plazo del diseño: N días», «Primera fecha disponible: [fecha]» y anticipo estimado. El precio no se anima. Texto fijo: «Estimado: confirmamos el valor final por WhatsApp tras revisar tu diseño.»
+9.5 Acciones y validación
+«Atrás» y «Siguiente» (primario). En el paso 6: «Agregar al pedido» (primario), «Consultar por WhatsApp» (secundario), «Copiar enlace de mi diseño» (terciario) y «Empezar de nuevo» (terciario, pide confirmar). No se puede avanzar sin tamaño, sabor, relleno, cobertura, decoración y alergias declaradas, ni terminar sin fecha; cada mensaje dice qué falta.
+9.6 Bloque inferior
+3 preguntas frecuentes sobre encargos y enlace «Cotizar un evento».
+10. VISTA PASTELES (CATÁLOGO)
+10.1 Encabezado: H1 «Pasteles y postres», subtítulo de 1 línea («Para hoy, para esta semana o para una fecha especial.») y control segmentado sticky bajo el header (alto 48px) con dos anclas internas, «Catálogo» y «Para eventos», que resalta la sección visible.
+10.2 Herramientas del catálogo (sticky bajo el control segmentado en escritorio):
+Buscador (alto 48px, ícono, placeholder «Busca tres leches, cupcakes, sin gluten...»): filtra EN VIVO, sin animación y sin debounce, normalizando tildes y mayúsculas; busca en nombre, categoría, descripción y dietas; resalta coincidencias con <mark> sutil (fondo --brand-soft).
+Chips: categoría (Todos + 6, con contador), ocasión y dieta (4). Interruptor «Pronta entrega hoy», casilla «Solo disponibles» y chip «Favoritos (N)».
+Orden: Relevancia (Más pedido, luego Nuevo, luego el resto por categoría), Precio de menor a mayor, Precio de mayor a menor, Novedades (Nuevo, luego Temporada). Contador «Mostrando X de Y productos» en aria-live=polite. Botón «Limpiar filtros» visible solo si hay filtros activos.
+En móvil: filtros en bottom sheet con botón «Filtros (N)».
+10.3 Aviso de alérgenos: franja fina bajo las herramientas con ícono de escudo: «Revisa alérgenos y dietas en cada producto. [AVISO_ALÉRGENOS]», con enlace a #/alergenos.
+10.4 Grilla de productos: tarjetas (7.5). Se muestran 12 y un botón secundario «Ver N más» carga el resto. Cambiar filtros reordena con FLIP. Con un filtro de dieta activo, cada tarjeta resalta la etiqueta correspondiente («Disponible sin gluten, bajo pedido»).
+10.5 Sección «Para eventos» (id=eventos-pasteles): fondo --bg-alt, H2 «¿Es un evento? Lo armamos contigo», 3 tarjetas de servicio (bodas, mesa-dulce, corporativo) y banda de CTA «¿Necesitas algo a medida?» con botones «Armar mi pastel» → #/arma-tu-pastel y «Pedir cotización» → #/cotizar.
+10.6 Modales de producto y servicio con tarjetas enlazadas (7.12 y sección 4).
+11. VISTA EVENTOS Y SERVICIOS
+11.1 Hero corto (alto mín. 48dvh, con 48vh declarado antes como respaldo): H1 «Dulces para los días que importan», párrafo de 2 líneas, botones «Cotizar mi evento» → #/cotizar y «Armar un pastel» → #/arma-tu-pastel.
+11.2 Servicios: 6 tarjetas (7.7) en grilla 3×2 (2×3 en tablet, 1 columna en móvil). Jerarquía: en escritorio, bodas ocupa 2 columnas.
+11.3 Cómo cotizamos un evento: 4 pasos horizontales numerados (Cuéntanos fecha, lugar e invitados → Proponemos opciones y precio → Degustación y ajustes, si aplica → Reservas con anticipo) unidos por una línea que se dibuja al entrar en vista.
+11.4 Qué necesitamos para cotizar: lista de 7 datos (fecha, lugar, número de invitados, presupuesto aproximado, alergias, estilo y colores, imagen de referencia) y botón «Cotizar con estos datos» → #/cotizar.
+11.5 Calculadora de porciones (interactiva, ligera): invitados (1 a 500) y tipo de evento (boda, cumpleaños, corporativo, baby shower). Calcula porciones totales con CONFIG.PORCIONES_POR_INVITADO (valores [CONFIRMAR_FACTORES], editables) y sugiere combinaciones tomadas de los datos (un pastel de tamaño X, o pastel más mesa de postres). El resultado enlaza a #/cotizar?personas=N. Es una guía, no una promesa: lo dice el texto bajo el resultado.
+11.6 Preguntas del evento: 4 en acordeón y CTA final.
+12. VISTA NOSOTROS
+12.1 Hero corto (alto mín. 56dvh, con 56vh declarado antes como respaldo): H1 «Detrás de cada pastel hay una persona», párrafo de 2 líneas con [PROPÓSITO_EMPRESA]. Cifras en una fila (4 contadores): [N]+ pedidos entregados, [N] años horneando, sabores de bizcocho disponibles en el configurador (calculado), [N] zonas atendidas.
+12.2 Historia: línea de tiempo vertical con 5 hitos ([AÑO] + [HITO]); la línea de 2px se dibuja con el scroll (scaleY ligada al progreso de la sección) y cada hito aparece al cruzar el 60% del viewport.
+12.3 Valores: 3 tarjetas enlazadas (sección 4), redactadas sin superlativos.
+12.4 Cómo trabajamos: 4 pasos horizontales (Escuchamos tu idea → Confirmamos fecha y precio → Horneamos y decoramos → Entregamos con cuidado) unidos por una línea que se dibuja al entrar en vista.
+12.5 Ingredientes y proceso: texto corto y lista con [DESCRIPCIÓN_INGREDIENTES] y [DESCRIPCIÓN_PROCESO]. Prohibido afirmar origen, proveedores, frescura u orgánico sin marcador [CONFIRMAR_DATO].
+12.6 Equipo: 3 tarjetas (7.11).
+12.7 Permisos y certificaciones: [REGISTRO_SANITARIO] y lista de [CERTIFICACIONES]; si no hay, se omite el bloque.
+12.8 Contacto: CTA con «Armar mi pastel» y «Escribir por WhatsApp»; datos [DIRECCIÓN], [HORARIO], [TELÉFONO], [EMAIL] y enlace a [ENLACE_MAPS] (sin iframes externos).
+13. PEDIDO, CHECKOUT Y REGLAS DE NEGOCIO
+13.1 Modelo del pedido (STORE)
+Línea: id de línea, tipo (producto o diseño), productoId, tamanoId, cantidad, opciones (dietas, mensaje), diseño (objeto de 9.3), precioUnitario (centavos), cupos y plazoDias. Persistencia versionada. Límites: 20 líneas; cantidad de 1 a 10; un diseño del configurador siempre es cantidad 1. Las líneas idénticas se agrupan sumando cantidad.
+13.2 SCHEDULE (funciones puras, reciben fecha y hora por parámetro para poder probarlas)
+ahoraEnZona(): fecha y hora actuales en ZONA_HORARIA.
+Un pedido hecho después de HORA_CORTE_PEDIDOS cuenta como hecho al día siguiente.
+fechaMinima(líneas): día base + el mayor plazoDias de las líneas; si ese día está cerrado, bloqueado o lleno, avanza al siguiente disponible. Si todas las líneas son de pronta entrega con stock suficiente (o complementos), la tienda está abierta y es anterior a HORA_CORTE_HOY, el mínimo es hoy.
+Un día está disponible si: no es anterior a fechaMinima; no está en FECHAS_BLOQUEADAS; ese día de la semana tiene horario; cuposUsados(día) + cuposDelPedido ≤ CUPOS_POR_DIA (cuposDelPedido = suma de cupos × cantidad; 0 si son solo complementos); no supera DIAS_ADELANTE_MAX. Muestra «Pocos cupos» cuando, tras este pedido, quedarían 2 o menos.
+Entrega urgente (solo si RECARGO_URGENTE_PORCENTAJE > 0): permite hasta [DÍAS_URGENTE] días antes del plazo normal, con el recargo visible y siempre «sujeto a confirmación por WhatsApp».
+Franjas: las de FRANJAS que caigan dentro del horario del día; si es hoy, solo las que empiecen al menos [MARGEN_HORAS] horas después de ahora.
+abiertoAhora() y proximaApertura(): según HORARIO_SEMANAL y ZONA_HORARIA.
+13.3 PRICING del pedido (centavos enteros)
+subtotal = suma de líneas. descuento = cupón vigente de CUPONES con subtotal ≥ mínimo (si no hay cupones, el campo de cupón no aparece). envío = costo de la zona (retiro 0; zona «otra» = «a cotizar»). total = subtotal − descuento + envío. anticipo = total × ANTICIPO_PORCENTAJE / 100, redondeado al centavo. saldo = total − anticipo. Si alguna línea es «A cotizar» (decoración escultórica), el checkout no se habilita y se ofrece «Pedir cotización».
+13.4 Checkout (#/pedido)
+Modal de 720px, 2 columnas en escritorio (formulario | resumen sticky) y una sola en móvil, con estas secciones:
+Tus datos: nombre*, WhatsApp*, correo (opcional).
+Retiro o entrega: radios «Retiro en [DIRECCIÓN]» o «Entrega a domicilio»; con entrega: zona (select), dirección*, referencia, y nombre y teléfono de quien recibe.
+Fecha y hora: calendario (7.14) y franja*.
+Detalles: dedicatoria o tarjeta (máx. 120 caracteres), alergias importantes* (o «No tengo alergias») y observaciones.
+Pago: método (METODOS_PAGO), nota «Reservas tu fecha con un anticipo de [ANTICIPO_PORCENTAJE]%. Los datos de pago te los enviamos por WhatsApp.» y casilla* «Leí las políticas y la información de alérgenos» con enlaces.
+Resumen: líneas, subtotal, descuento, envío, total, anticipo, saldo, fecha y franja. Botón primario «Enviar pedido por WhatsApp» (lg). Validación como en 7.17; el primer error recibe el foco y se anuncia.
+13.5 Mensaje de WhatsApp (formato fijo, sin emojis, líneas separadas por saltos de línea, con encodeURIComponent)
+Saludo y folio: «Hola [NOMBRE_EMPRESA], quiero hacer un pedido. Folio: PED-AAMMDD-XXXX».
+Cliente: nombre y WhatsApp.
+Entrega: retiro o domicilio (zona, dirección, referencia, quién recibe).
+Fecha y franja.
+Pedido: una línea por ítem, «1 × Nombre (tamaño), opciones, $X»; para diseños, resumen de las elecciones, mensaje en el pastel y enlace del diseño (parámetro d).
+Alergias declaradas y observaciones.
+Subtotal, envío, total, anticipo y la frase «Pendiente de confirmación».
+El folio se genera en el cliente (fecha + 4 caracteres no ambiguos) y es solo una referencia. Si el texto supera ≈1500 caracteres, se abrevia el diseño y se ofrece «Copiar resumen completo».
+13.6 Después de enviar
+Pantalla de éxito con check animado, folio y el texto «Tu pedido aún no está confirmado: lo confirmamos cuando respondamos y recibamos el anticipo». Botones: «Abrir WhatsApp de nuevo», «Copiar resumen», «Imprimir resumen» (hoja de pedido con la capa print: logo, folio, líneas, fecha, totales y aviso de alérgenos), «Ya envié mi pedido» (vacía el pedido y guarda el folio para el seguimiento) y «Consultar estado» → #/seguimiento. Con ENDPOINT_PEDIDOS: POST con JSON; si responde bien se muestra el folio devuelto; si falla, se avisa y se ofrece WhatsApp.
+13.7 Otros flujos
+Cotización (#/cotizar): campos de 7.17, fecha tentativa (calendario) y número de personas; resumen para WhatsApp con la etiqueta «COTIZACIÓN»; sin precio.
+«Avisarme por WhatsApp» (producto agotado): mensaje «Hola, ¿cuándo estará disponible [nombre]?».
+Seguimiento (#/seguimiento): ver 5.11.
+Privacidad: sin cookies de terceros; solo localStorage propio (pedido, favoritos, borrador del diseño). Si se completa ANALITICA, se muestra aviso y se pide consentimiento antes de cargar nada.
+TRACK: función track(evento, datos) vacía por defecto. Eventos: ver_pastel, agregar_pedido, paso_configurador, iniciar_checkout, enviar_pedido, cotizar.
+14. ANIMACIÓN Y MOVIMIENTO (PARTE CENTRAL)
+14.1 Principios
+Antes de animar, define el propósito: feedback, explicación, continuidad espacial o deleite. Lo que se repite muchas veces es rápido y sobrio; lo que se ve una vez puede lucirse.
+Presupuesto de movimiento (6.0.8): el único movimiento no provocado por el usuario es la coreografía del hero y, con moderación, el slider «Por dentro» y las líneas de tiempo. Todo lo demás responde a una acción del usuario.
+Tokens: --ease-out: cubic-bezier(.23,1,.32,1) | --ease-in-out: cubic-bezier(.77,0,.175,1) | --d-fast: 150ms | --d-base: 220ms | --d-slow: 500ms | --d-hero: 800ms.
+Prohibido: ease-in en entradas, transition: all, rebote o elástico, animar desde scale(0), animar width, height, top o left. Se anima transform y opacity (clip-path y filter con moderación). will-change solo mientras dura la animación.
+Entradas desde scale(.95) a scale(.96) + opacity; la salida dura ≈60% de la entrada; los elementos emergentes parten del origen de su disparador (transform-origin).
+Stagger: 40 a 80ms entre elementos (variable CSS --i, máximo 8 elementos); secuencia total máxima 1.2 s.
+Las animaciones de interacción son interrumpibles (transiciones CSS, no keyframes). Springs (JS) solo para gestos y efectos decorativos: stiffness 170, damping 22 (sin rebote visible).
+14.2 Niveles
+A, frecuente (hover, foco, filtros, botones, navegación, búsqueda, selección de opciones del configurador, calendario): 120 a 200ms, nada decorativo. Presionar un botón: scale(.97) en 100ms. La búsqueda al escribir, los atajos de teclado y los cambios de precio NO se animan.
+B, ocasional (modal, drawer, toast, cambio de pestaña, menú móvil, cambio de paso del configurador): 200 a 280ms.
+C, impacto (hero, scroll, contadores, slider): 450 a 900ms, coreografiado, una vez por visita.
+14.3 Catálogo de animaciones (todas obligatorias salvo indicación)
+1. HERO, titular: máscara clip-path inset por línea; cada línea sube desde translateY(100%) a 0 en 700ms con --ease-out y stagger de 90ms; luego subtítulo y botones (fade + translateY(12px), 500ms, stagger 80ms).
+2. HERO, pastel firma (momento firma 1, SVG 560×560): (a) el plato aparece con scale(.95)→1 + opacity en 400ms; (b) los 3 pisos suben desde translateY(24px) + opacity, 500ms --ease-out, stagger de 120ms de abajo hacia arriba; (c) el glaseado se dibuja: 6 a 8 paths de goteo con stroke-dasharray y stroke-dashoffset calculados con getTotalLength(), 900ms, stagger de 60ms, y luego el relleno aparece en fade de 200ms; (d) 18 chispas de colores (rect redondeados rotados) entran con scale(.96)→1 + opacity, stagger de 25ms; (e) dos velas con llama: las llamas aparecen en fade de 300ms y luego parpadean con scaleY entre .94 y 1.06 y desplazamiento de ±0.6px, 1.8s ease-in-out alternate durante 3 ciclos y luego se detienen (WCAG 2.2.2), desfasadas entre sí (sin glow ni sombra); (f) las 4 tarjetas flotantes entran con stagger de 100ms desde translateY(16px). Los bucles se pausan fuera de pantalla (IntersectionObserver) y se desactivan con reduced-motion.
+3. HERO, parallax: el pastel y las tarjetas se desplazan hasta ±10px y rotan hasta ±2° siguiendo el puntero con spring (solo con @media (hover:hover) and (pointer:fine)); se anula al salir el puntero.
+4. CONTADORES (Nosotros): al entrar en vista, cuentan de 0 al valor en 1.2 s con easeOutQuart usando requestAnimationFrame y tabular-nums; solo una vez.
+5. SCROLL REVEAL (acotado): solo los elementos marcados con [data-reveal] entran con translateY(16px)→0 + opacity, 500ms --ease-out, IntersectionObserver (threshold .15, rootMargin 0px 0px -8% 0px), una sola vez. Se marcan únicamente los bloques que cuentan una historia (el slider «Por dentro» y las líneas de tiempo); ninguna otra sección entra con fade y desplazamiento hacia arriba (6.0.8). Barra de progreso de scroll en el header (transform: scaleX).
+6. TARJETAS CON CAJA: hover (solo con hover:hover) en producto, categoría y diseño: borde a --brand e imagen scale(1.03), 250ms --ease-out; la flecha de la tarjeta de categoría avanza 4px. Sin elevación, sin sombra y sin hover de contenedor en los bloques sin caja. Estados :hover y :focus-within idénticos.
+7. AGREGAR AL PEDIDO: (a) press scale(.97); tras el clic, spinner de 600ms y luego «Agregado» con check (1.2 s) y vuelve al texto original; (b) la miniatura del producto vuela hasta el ícono de Mi pedido (clon fixed animado con Web Animations API, 500ms, translate + scale 1→.3, --ease-out) y se elimina al terminar; (c) el contador hace un pulso 1→1.15→1 en 280ms; (d) toast «[Nombre] agregado a tu pedido» con enlace «Ver pedido».
+8. PESTAÑAS: el indicador del header se desliza entre pestañas (transform + width medidos con getBoundingClientRect, 250ms --ease-out); el contenido saliente hace fade-out en 120ms y el entrante sube desde translateY(8px) con fade-in en 220ms.
+9. FILTROS: reorden con FLIP (240ms, --ease-out); las tarjetas que salen hacen opacity + scale(.95) en 150ms, las nuevas entran con scale(.96)→1 + opacity en 220ms. Skeleton con shimmer en la primera carga (≈500ms).
+10. MODALES: entran desde scale(.96) + opacity en 220ms con transform-origin en la posición del disparador (si es una tarjeta) o al centro; salen en 140ms. Backdrop con fade de 200ms. Drawer de Mi pedido y menú móvil: translateX(100%)→0 en 260ms --ease-out, salida en 180ms. Bottom sheet: translateY(100%)→0 en 260ms.
+11. SLIDER EXTERIOR/INTERIOR («Por dentro», 8.6): contenedor aspect-ratio 16/9 con dos escenas SVG (pastel completo y pastel cortado con capas visibles) y clip-path: inset(0 X% 0 0); manija circular de 44px con flechas, arrastrable con pointer events (pointer capture, sin lag), accesible con role=slider, aria-valuemin 0, aria-valuemax 100, aria-valuenow, aria-valuetext y teclas ← → (±5%), Home y End. Al entrar en vista, la manija hace un barrido 50%→72%→50% en 900ms (una vez). Las etiquetas de las 4 capas aparecen con opacity cuando la manija pasa por su zona.
+12. LÍNEAS DE TIEMPO Y PASOS (Inicio, Eventos y Nosotros): la línea se dibuja con scaleY (vertical) o scaleX (horizontal) ligada al scroll o a la entrada en vista; cada hito entra con reveal.
+13. VISTA PREVIA DEL CONFIGURADOR (momento firma 2): al elegir cobertura o colores, fill con transición de 180ms; al añadir un extra (flores, frutas, topper, macarons, velas) el elemento entra con scale(.95)→1 + opacity en 180ms con transform-origin en su base y sale en 120ms; al cambiar de pisos, FLIP de 240ms. El texto del mensaje en el topper se actualiza sin animar. Cambio de paso: contenido saliente en fade de 120ms, entrante con translateY(8px) + fade de 220ms.
+14. FORMULARIO: los errores aparecen con translateY(-4px)→0 + opacity en 150ms; el campo con error cambia de borde en 150ms (nada de shake). Éxito: círculo + check que se dibuja (stroke-dashoffset, 400ms) y luego el texto.
+15. TOAST: translateY(12px)→0 + opacity en 220ms; salida en 160ms.
+16. SIN ANIMACIÓN (datos críticos): «Hoy: quedan N», precios y totales, estado abierto/cerrado, «Pocos cupos» y el estado de cada día del calendario son estáticos.
+17. CALENDARIO: el cambio de mes usa translateX(±8px)→0 + opacity en 180ms; elegir un día cambia fondo y borde en 120ms.
+18. FAVORITO: al guardar, el corazón rellena el color en 150ms y hace un pulso scale 1→1.12→1 en 160ms (sin rebote); al quitar, solo cambia el color.
+14.4 Accesibilidad del movimiento
+@media (prefers-reduced-motion: reduce): sin parallax, contadores con el valor final, reveals visibles de inmediato, el pastel del hero se muestra ya armado y sin parpadeo de llamas, transiciones de contenido reducidas a fade de 100ms, sin barrido del slider ni vuelo al pedido (solo el pulso del contador sin escala), sin dibujo de líneas (se muestran completas).
+Ninguna información depende solo de la animación.
+14.5 Rendimiento del movimiento
+60 fps: sin layout thrash (agrupa lecturas y escrituras del DOM), un solo IntersectionObserver reutilizado para reveals, requestAnimationFrame para contadores y spring, cancelación de animaciones al cambiar de vista.
+15. ACCESIBILIDAD (WCAG 2.2 AA)
+15.1 Estructura y semántica
+html lang="es". Landmarks: header, nav con aria-label «Principal», main (id=contenido, tabindex=-1) y footer. Un solo h1 por vista y jerarquía de encabezados sin saltos. Primer elemento enfocable: enlace «Saltar al contenido», visible al recibir foco.
+Cada cambio de vista actualiza document.title, mueve el foco al h1 y lo anuncia en la región aria-live=polite (sección 4).
+Listas reales (ul y ol), button para acciones y a con href para navegación. Nunca un div con click.
+Imágenes con alt descriptivo; las decorativas con alt vacío o aria-hidden. Las ilustraciones de producto llevan role=img y un aria-label corto; los SVG complejos (pastel del hero y vista previa del configurador) llevan título o aria-label dinámico. Sin emojis en ningún alt.
+Tablas solo para datos (zonas de entrega, detalles del producto), con th y scope.
+15.2 Teclado y foco
+Todo el sitio se usa solo con teclado y el orden de tabulación coincide con el visual. Foco visible con :focus-visible (2px --brand, offset 2px, contraste 3:1 contra el fondo contiguo); nunca se quita el outline sin reemplazo.
+El foco nunca queda tapado por el header sticky ni por la barra inferior móvil: scroll-padding-top y scroll-padding-bottom calculados con sus alturas.
+Modales, drawer y bottom sheet: focus trap, Esc cierra, el foco vuelve al disparador y el contenido de fondo queda inerte (inert).
+Calendario (7.14) y slider (14.3, animación 11) con las teclas definidas en cada componente. Sin atajos de una sola tecla.
+Objetivos táctiles de 44×44px, con 8px de separación como mínimo. Nunca menos de 24×24px (WCAG 2.5.8).
+15.3 Color, contraste y texto
+Contraste mínimo 4.5:1 en texto normal y 3:1 en texto grande (desde 24px, o 19px en negrita), íconos y bordes de componentes. Verifica cada par de la paleta final, incluidos --text-faint y --on-cacao-soft.
+Ninguna información depende solo del color: calendario (texto y patrón), estados, swatches (nombre), disponibilidad (punto y texto).
+Zoom al 200% y reflow a 320px sin pérdida de contenido ni scroll horizontal; tamaños de texto en rem; el espaciado de texto del usuario no rompe el diseño.
+Soporte de prefers-contrast: more (bordes más marcados) y forced-colors (íconos y bordes con currentColor o colores del sistema). Declara color-scheme: light.
+15.4 Formularios y mensajes
+Cada campo con label asociado (for e id); grupos con fieldset y legend; atributos autocomplete correctos; ayuda y error enlazados con aria-describedby; aria-invalid en los campos con error. role=alert solo en el primer error al enviar. El placeholder nunca sustituye a la etiqueta.
+No se pide dos veces el mismo dato dentro de un flujo (WCAG 3.3.7): la cotización y el checkout reutilizan nombre y WhatsApp ya escritos.
+Sin límites de tiempo. Las acciones que borran datos (vaciar el pedido, empezar de nuevo) piden confirmación.
+15.5 Movimiento y medios
+Se aplica 14.4. Ningún elemento parpadea más de 3 veces por segundo (WCAG 2.3.1). Ninguna animación automática dura más de 5 s sin detenerse (WCAG 2.2.2): el parpadeo de las velas se limita a 3 ciclos y el skeleton dura lo que tarda la carga.
+15.6 Pruebas manuales mínimas
+Pedido completo solo con teclado; configurador y checkout con lector de pantalla (NVDA o VoiceOver); zoom 200%; modo de alto contraste; reduced motion activado.
+16. SEO, METADATOS Y DATOS ESTRUCTURADOS
+16.1 Head y metaetiquetas
+charset UTF-8, viewport (width=device-width, initial-scale=1), title de 60 caracteres máx. y description de 120 a 160 por ruta (el router los actualiza), canonical, theme-color con el color de marca y favicon SVG en data URI.
+Open Graph y Twitter Card: og:title, og:description, og:type=website, og:locale tomado de CONFIG.LOCALE y og:image [IMAGEN_OG] (1200×630, marcador mientras no exista).
+Con ?debug=1 se emite robots noindex; sin ese parámetro, index,follow.
+16.2 JSON-LD
+Bakery (subtipo de LocalBusiness): name, address, telephone, openingHoursSpecification (desde HORARIO_SEMANAL), areaServed (desde ZONAS_ENTREGA) y priceRange. Todo sale de CONFIG; se omite cualquier propiedad cuyo valor siga siendo un [MARCADOR].
+FAQPage desde 5.10, con las respuestas ya calculadas.
+Product y Offer solo para productos de precio fijo y disponibles (price, priceCurrency, availability). Sin aggregateRating mientras MOSTRAR_VALORACIONES sea false.
+El JSON-LD se genera en BOOT, se valida con JSON.parse antes de insertarlo y nunca incluye marcadores, reseñas inventadas ni precios de ejemplo presentados como reales.
+16.3 Limitaciones y contenido sin JavaScript
+LIMITACIÓN: con rutas por hash y un solo archivo, los buscadores indexan sobre todo #/inicio y el texto de las demás vistas se genera con JavaScript. Para un posicionamiento serio, migrar a páginas estáticas por ruta. Documéntalo con un comentario que empiece por «LIMITACIÓN:».
+Un bloque noscript con lo esencial: nombre, qué hacen, WhatsApp, horario y dirección.
+sitemap.xml y robots.txt son entregables aparte y no se generan aquí.
+17. RENDIMIENTO, SEGURIDAD Y CALIDAD DEL CÓDIGO
+17.1 Objetivos
+En un móvil de gama media con 4G: LCP menor a 2.5 s, CLS menor a 0.1, INP menor a 200 ms y cero errores en consola. Peso objetivo del HTML sin fotos: 400 KB sin comprimir ([PRESUPUESTO_KB], ajustable).
+17.2 Carga y render
+preconnect a Google Fonts y display=swap. El texto del hero no espera a la fuente: respaldo con métricas ajustadas (size-adjust, ascent-override) para evitar saltos de diseño.
+Ilustraciones inline y sin peticiones. Cada img con width, height, loading=lazy y decoding=async; solo la primera imagen visible usa fetchpriority=high.
+content-visibility: auto con contain-intrinsic-size en las secciones bajo el pliegue. Sin selectores profundos, sin blur grandes y solo transform y opacity en animaciones.
+17.3 JavaScript
+BOOT corre en DOMContentLoaded. Render por vista con delegación de eventos, un solo IntersectionObserver reutilizado, listeners pasivos en scroll y touch, y requestAnimationFrame en lugar de temporizadores para movimiento.
+Ninguna tarea larga (más de 50 ms) en el hilo principal. La búsqueda en vivo usa un índice precalculado y normalizado una sola vez.
+Sin números mágicos: los valores de negocio van a CONFIG y los visuales a tokens. Sin código muerto, sin console.log fuera de ?debug=1 y con cada limitación documentada con «LIMITACIÓN:».
+17.4 Robustez y seguridad
+localStorage y sessionStorage siempre en try/catch (modo privado); JSON.parse protegido; clave versionada pasteleria:v1 con migración. El sitio funciona aunque no haya almacenamiento.
+escapeHTML en todo texto dinámico; ningún innerHTML con datos del usuario sin escapar; sin eval ni new Function; sin cookies.
+Los parámetros del hash, incluido d, se validan contra una lista blanca de ids. Los enlaces externos llevan rel="noopener noreferrer". Los enlaces de WhatsApp usan https://wa.me/<número>?text= con encodeURIComponent.
+Con ENDPOINT_PEDIDOS o ENDPOINT_ESTADO, toda petición tiene timeout y un respaldo por WhatsApp.
+17.5 Compatibilidad e impresión
+Navegadores evergreen de los últimos 2 años. Las funciones modernas (OKLCH, @layer, :has, inert) llevan respaldo; OKLCH con hex previo.
+La capa print oculta header, drawers y botones y deja la hoja de pedido y las políticas (13.6).
+18. AUTOAUDITORÍA Y PRUEBAS
+18.1 Lista de verificación (se corrige todo lo que falle; no se narra)
+a. Cumplimiento. Todas las secciones 3 a 17 están implementadas; todas las rutas de la sección 4 existen y toda tarjeta es un enlace real; los [MARCADORES] aparecen tal cual, sin inventar datos; no queda texto de plantilla.
+b. Negocio y seguridad alimentaria. Aviso de alérgenos donde corresponde; ALERGENOS_VERIFICADOS gobierna la franja de ?debug=1; ninguna afirmación prohibida («100% natural», «sin conservantes», «orgánico»); fechas desde SCHEDULE y ZONA_HORARIA; dinero en centavos; un pedido nunca se presenta como confirmado antes de tiempo.
+c. Funcional. Flujo completo en móvil (catálogo, producto, pedido, checkout, WhatsApp) en menos de 3 minutos; configurador de 6 pasos con atrás, validación y recuperación desde d; filtros en el hash; atrás y adelante cierran modales; recargar conserva el pedido.
+d. Accesibilidad (sección 15) y e. Rendimiento y seguridad (sección 17) cumplidos.
+f. Diseño (6.0):
+El brief declara el sujeto, los tres diales, el plan de tokens y qué defaults de 6.0.3 se cambiaron tras la revisión.
+Cada coincidencia restante con un default de 6.0.3 está justificada por el cliente o por el sujeto.
+Sin emojis; sin Inter, Roboto, Arial, Open Sans ni Helvetica como tipografía de marca; sin degradados morado-azul ni resplandores.
+Hero no centrado (varianza mayor a 4) y con el pastel como elemento memorable; solo producto, categoría y diseño llevan caja.
+Sin eyebrows decorativos, sin MAYÚSCULAS en etiquetas, sin una palabra acentuada en los titulares, sin «→» pegado ni puntos medios entre datos.
+Numeración solo en secuencias reales; textos sin superlativos ni clichés; presupuesto de movimiento de 6.0.8 respetado.
+Se quitó al menos un elemento decorativo (6.0.9).
+Prueba del vecino: con el logotipo tapado y junto a otras tres pastelerías generadas, el sitio debe reconocerse como distinto. Si no, vuelve a 6.0.2.
+18.2 Pruebas de lógica: __autotest()
+Se ejecuta solo con ?debug=1 y escribe en consola una tabla con nombre, resultado (PASS o FAIL) y detalle, más un resumen «N de M pruebas». No muestra nada en la interfaz. Las funciones de SCHEDULE y PRICING reciben fecha y hora por parámetro, así que se prueban sin tocar el reloj del dispositivo.
+T1. Dinero. 0.10 + 0.20 dólares da exactamente 30 centavos; el formato con CONFIG.LOCALE y CONFIG.MONEDA nunca produce NaN.
+T2. Anticipo. Total de 3333 centavos al 50% da anticipo 1667 y saldo 1666; anticipo + saldo es siempre igual al total.
+T3. Cupón. Sin cupones el campo no se dibuja; un cupón vigente cuyo mínimo no se alcanza no descuenta.
+T4. Hora de corte. Con America/Guayaquil (UTC−5) y relojes de otra zona simulados, un pedido a las 15:59 cuenta hoy y a las 16:01 cuenta mañana.
+T5. Fecha mínima. Plazo de 3 días desde un lunes da jueves; desde un jueves cae en domingo (cerrado) y avanza al lunes; una fecha bloqueada o llena avanza a la siguiente disponible.
+T6. Pronta entrega. Con stock suficiente, tienda abierta y antes de HORA_CORTE_HOY, el mínimo es hoy; a las 12:01 pasa a mañana.
+T7. Cupos. cuposUsados + cuposDelPedido mayor que CUPOS_POR_DIA marca el día lleno; si quedarían 2 o menos muestra «Pocos cupos»; un pedido solo de complementos consume 0 cupos.
+T8. Horizonte. El día 120 desde hoy está disponible y el 121 no (DIAS_ADELANTE_MAX).
+T9. Franjas. Hoy solo aparecen las que empiezan al menos [MARGEN_HORAS] horas después de ahora; las que caen fuera del horario se ocultan.
+T10. Abierto o cerrado. Con el horario como intervalo [09:00, 18:00): 09:00 abre, 18:00 ya está cerrado; domingo y fechas bloqueadas devuelven cerrado y proximaApertura() apunta al siguiente día hábil.
+T11. Diseño codificado. codificar y decodificar devuelven el mismo objeto; los ids desconocidos se ignoran; un d vacío o corrupto no lanza errores.
+T12. Router. Un hash inválido redirige a #/inicio; un id inexistente muestra el estado vacío; cada ruta de la sección 4 resuelve a una vista.
+T13. Integridad de datos. Ids únicos; relacionados, servicios, complementos e idealPara apuntan a ids que existen; cada ilustracion existe como symbol en el sprite; cada tamaño tiene precio mayor que 0 y exactamente un defecto; toda categoría de producto existe.
+T14. Enlaces. Cada tarjeta contiene exactamente un a con href; no hay href="#" vacíos ni onclick inline.
+T15. Seguridad. escapeHTML("<img src=x onerror=1>") no crea nodos; los mensajes de WhatsApp pasan por encodeURIComponent, sin saltos de línea ni ampersands sin codificar.
+T16. Búsqueda. «tres leches» encuentra «Tres leches» y variantes con tildes o mayúsculas; una consulta vacía devuelve todo el catálogo.
+T17. Filtros. Combinar categoría, dieta, «hoy» y orden en el hash da el mismo resultado después de recargar.
+T18. Configurador. No avanza sin los campos obligatorios; la decoración escultórica da «A cotizar» y deshabilita el checkout; el número de invitados sugiere un tamaño sin cambiar la elección.
+T19. Temporadas. Una entrada con marcadores sin reemplazar se ignora sin error; solo está activa entre desde y hasta.
+T20. WhatsApp. Un mensaje de hasta ≈1500 caracteres no se abrevia; uno mayor se abrevia y ofrece «Copiar resumen completo»; el folio cumple PED-AAMMDD-XXXX con un alfabeto sin 0, O, 1, I ni L.
+T21. STORE. Máximo 20 líneas, cantidad de 1 a 10 y diseño siempre en 1; las líneas idénticas se agrupan; una clave corrupta o antigua no rompe el sitio; sin almacenamiento disponible el sitio funciona.
+T22. Alérgenos. Con ALERGENOS_VERIFICADOS en false existe la franja de revisión solo si hay ?debug=1.
+T23. Vocabulario. Al cambiar CONFIG.VOCABULARIO a «torta» y volver a renderizar, no queda la palabra «pastel» escrita a mano en ningún texto visible.
+T24. Sin emojis. Una expresión con \p{Extended_Pictographic} sobre el texto visible y sobre los atributos alt y aria-label no encuentra nada.
+T25. CSS prohibido. Ninguna hoja de estilo contiene «transition: all» ni height: 100vh, y no hay text-transform: uppercase en elementos visibles.
+T26. Accesibilidad básica. Todo img tiene alt; todo botón y enlace tiene nombre accesible; hay un solo h1 por vista y los niveles no saltan; existe un bloque @media (prefers-reduced-motion: reduce).
+T27. Contraste. Se calcula la razón de los pares críticos (--text sobre --bg, --text-soft sobre --bg, --text-faint sobre --bg, --on-brand sobre --brand, --on-cacao sobre --cacao) y todos son al menos 4.5:1.
+T28. Objetivos táctiles. Botones, chips y enlaces de navegación miden al menos 44×44px (se exceptúan los enlaces dentro de párrafos).
+Si alguna prueba falla, corrige y vuelve a ejecutarla hasta llegar a 0 fallos. No se entrega con pruebas en FAIL.
+18.3 Entrega
+El archivo completo según la sección 3 (o en 3 partes con los marcadores exactos).
+Después del código, solo una lista corta de «Pendientes del cliente» con los [MARCADORES] agrupados: datos del negocio, textos legales, fotos y textos reales, y precios y alérgenos por verificar. Nada de narrar la auditoría ni de elogiar el resultado; las decisiones de diseño ya están en el comentario del brief.

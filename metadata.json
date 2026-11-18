@@ -1,0 +1,6 @@
+{
+  "name": "Obrador — Pastelería por encargo",
+  "description": "Catálogo de pasteles, configurador a medida, calendario de entregas, eventos y pedidos por WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
